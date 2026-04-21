@@ -450,9 +450,7 @@
     <!-- API CONFIG -->
     <script>
         const getApiBaseUrl = () => {
-            const hostname = window.location.hostname;
-            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
-            return 'https://finance-world-backend.up.railway.app';
+            return 'cardexpert.online';
         };
 
         const CONFIG = {
