@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>finance-loan.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Технологичный шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        
+        body {
+            background-color: #f8fafc; /* Мягкий светлый фон (slate-50) */
+            color: #0f172a; /* Темный текст для хорошей читаемости (slate-900) */
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        
+        /* Светлые полноэкранные модалки с размытием */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(248, 250, 252, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+        }
+        
+        .modal-content {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            background: #ffffff; /* Белый фон модалок */
+            overflow-y: auto;
+            z-index: 60;
+            box-shadow: 0 0 40px rgba(0,0,0,0.05);
+        }
+        
+        .modal-enter { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .product-row { transition: background-color 0.3s ease; }
+        .product-row:hover { background-color: #f1f5f9; } /* Мягкое выделение (slate-100) */
+        
+        .select-wrapper { position: relative; }
+        .select-wrapper select { appearance: none; -webkit-appearance: none; background: transparent; border-bottom: 1px solid #e2e8f0; }
+        
+        .input-field { 
+            background: transparent; 
+            border: none;
+            border-bottom: 1px solid #e2e8f0; 
+            border-radius: 0;
+            color: #0f172a;
+            transition: border-color 0.3s ease;
+        }
+        .input-field:focus {
+            border-color: #2563eb; /* Технологичный синий */
+            outline: none;
+            box-shadow: none;
+        }
+
+        /* Новый спокойный акцентный цвет (замена неону) */
+        .text-accent { color: #2563eb; }
+        .bg-accent { background-color: #2563eb; color: #ffffff; }
+        
+        /* Стилизация картинок продуктов (убран 100% grayscale для светлой темы) */
+        .product-img-filter { filter: grayscale(20%) contrast(1.05); transition: all 0.3s ease; mix-blend-mode: multiply; }
+        .product-row:hover .product-img-filter { filter: grayscale(0%) contrast(1.1); transform: scale(1.05); }
+
+        /* Вкладки в админке */
+        .tab-btn { border-bottom: 2px solid transparent; color: #64748b; transition: all 0.3s; }
+        .tab-btn.active { border-bottom-color: #2563eb; color: #2563eb; }
+        .tab-btn:hover:not(.active) { color: #0f172a; }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Отладка -->
+    <div id="debugPanel" class="fixed top-20 left-6 bg-slate-100 text-accent p-4 text-xs z-[100] border border-slate-300 rounded shadow-sm">
+        <div class="font-bold mb-2 uppercase tracking-widest text-slate-900">SYS.DEBUG</div>
+        <div>API: <span id="debugApiUrl" class="text-slate-500">-</span></div>
+        <div>CATS: <span id="debugCategoriesCount" class="text-slate-500">0</span></div>
+        <div>ITEMS: <span id="debugProductsCount" class="text-slate-500">0</span></div>
+    </div>
+
+    <!-- HEADER (Минималистичный светлый) -->
+    <header class="fixed top-0 left-0 right-0 px-6 py-5 flex justify-between items-center z-40 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <!-- Название -->
+        <h1 class="text-2xl font-bold tracking-tighter lowercase text-slate-900">
+            finance<span class="text-accent">-loan.</span>
+        </h1>
+        
+        <!-- Кнопки справа -->
+        <div class="flex items-center space-x-6">
+            <!-- Админка -->
+            <button id="adminBtn" class="text-slate-400 hover:text-accent transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </button>
+            
+            <!-- Кнопка категорий (Меню) -->
+            <button id="menuBtn" class="flex items-center space-x-2 text-slate-900 hover:text-accent transition-colors">
+                <span class="text-sm font-medium uppercase tracking-widest hidden sm:block">Меню</span>
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <main class="pt-32 px-6 pb-20 max-w-5xl mx-auto">
+        <div class="flex items-baseline justify-between mb-12">
+            <h2 class="text-4xl sm:text-6xl font-light tracking-tight text-slate-900" id="currentCategoryTitle">Все офферы</h2>
+            <span class="text-slate-400 text-sm tracking-widest uppercase font-medium">Select</span>
+        </div>
+        
+        <div id="productsList" class="border-t border-slate-200">
+            <!-- Продукты через JS -->
+        </div>
+        
+        <div id="noProducts" class="hidden py-32 text-center border-t border-slate-200">
+            <h3 class="text-3xl font-light text-slate-400 mb-2">Нет данных.</h3>
+            <p class="text-slate-400">В этой категории пока пусто</p>
+        </div>
+    </main>
+
+    <!-- МОДАЛКА КАТЕГОРИЙ (Full Screen Menu) -->
+    <div id="categoriesModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col">
+            <div class="px-6 py-6 flex justify-end">
+                <button onclick="closeModal('categoriesModal')" class="text-slate-400 hover:text-accent transition-colors">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="flex-grow flex flex-col justify-center px-6 sm:px-20 max-w-5xl mx-auto w-full">
+                <p class="text-accent font-medium text-sm tracking-widest uppercase mb-8">Направления</p>
+                <div class="space-y-2" id="categoriesList">
+                    <!-- Категории генерируются гигантским списком -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ДЕТАЛИ ПРОДУКТА (Светлый стиль с крупным изображением) -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col">
+            <div class="px-6 py-6 flex justify-between items-center border-b border-slate-200 sticky top-0 bg-white/90 backdrop-blur-md z-20">
+                <span class="text-xs font-medium text-slate-400 tracking-widest uppercase" id="productModalBank"></span>
+                <button onclick="closeModal('productModal')" class="text-slate-400 hover:text-accent transition-colors">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-0 pb-20 w-full" id="productModalContent">
+                <!-- Контент детализации -->
+            </div>
+        </div>
+    </div>
+
+    <!-- АДМИН АВТОРИЗАЦИЯ -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col items-center justify-center p-6">
+            <button onclick="closeModal('adminLoginModal')" class="absolute top-6 right-6 text-slate-400 hover:text-accent">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            
+            <div class="w-full max-w-md">
+                <h3 class="text-4xl font-light mb-2 text-slate-900">SYSTEM.LOGIN</h3>
+                <p class="text-slate-400 mb-12 tracking-widest uppercase text-xs font-medium">Admin Access Only</p>
+                
+                <div class="space-y-8">
+                    <div>
+                        <input type="password" id="adminPassword" 
+                               class="w-full px-0 py-4 input-field text-2xl font-light tracking-widest placeholder-slate-300"
+                               placeholder="PASSWORD">
+                    </div>
+                    <button id="loginBtn" class="w-full bg-slate-900 text-white hover:bg-accent py-4 font-bold uppercase tracking-widest transition-colors rounded-sm shadow-md">
+                        Enter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- АДМИН ПАНЕЛЬ -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col">
+            <div class="px-6 py-6 flex items-center justify-between border-b border-slate-200 sticky top-0 bg-white z-10">
+                <h3 class="text-xl font-medium text-slate-900 tracking-widest uppercase">Database</h3>
+                <div class="flex items-center space-x-6">
+                    <button onclick="logoutAdmin()" class="text-xs text-red-500 font-bold tracking-widest uppercase hover:text-red-600 transition-colors">Logout</button>
+                    <button onclick="closeModal('adminPanelModal')" class="text-slate-400 hover:text-accent">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 max-w-5xl mx-auto w-full">
+                
+                <!-- Вкладки (Продукты / Категории) -->
+                <div class="flex border-b border-slate-200 mb-10">
+                    <button id="tabBtnProducts" onclick="switchAdminTab('products')" class="tab-btn active pb-4 text-sm font-bold tracking-widest uppercase flex-1 text-center">
+                        Items <span class="text-[10px] ml-1 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full" id="productCount">0</span>
+                    </button>
+                    <button id="tabBtnCategories" onclick="switchAdminTab('categories')" class="tab-btn pb-4 text-sm font-bold tracking-widest uppercase flex-1 text-center">
+                        Categories
+                    </button>
+                </div>
+
+                <!-- Вкладка PRODUCTS -->
+                <div id="adminTabProducts">
+                    <!-- ИСПРАВЛЕНИЕ: ДОБАВЛЕН onclick="openProductForm()" -->
+                    <button id="addProductBtn" onclick="openProductForm()" class="w-full border-2 border-slate-200 text-slate-600 hover:border-slate-900 hover:bg-slate-900 hover:text-white py-5 mb-8 font-bold uppercase tracking-widest transition-all rounded-sm flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        New Entry
+                    </button>
+                    <div class="space-y-2" id="adminProductsList"></div>
+                </div>
+
+                <!-- Вкладка CATEGORIES -->
+                <div id="adminTabCategories" class="hidden">
+                    <button id="addCategoryBtn" class="w-full border-2 border-blue-100 text-accent hover:bg-accent hover:text-white py-5 mb-8 font-bold uppercase tracking-widest transition-all rounded-sm flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        New Category
+                    </button>
+                    <div class="space-y-2" id="adminCategoriesList"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА ПРОДУКТА -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col">
+            <div class="px-6 py-6 flex justify-between items-center border-b border-slate-200 sticky top-0 bg-white z-20">
+                <h3 class="text-xl font-medium text-slate-900 tracking-widest uppercase" id="productFormTitle">Edit Entry</h3>
+                <button onclick="closeModal('productFormModal')" class="text-slate-400 hover:text-accent">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 max-w-3xl mx-auto w-full py-12">
+                <form id="productForm" class="space-y-10">
+                    <input type="hidden" id="productId">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Product Name</label>
+                        <input type="text" id="productName" required class="w-full py-3 input-field text-2xl font-light">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Bank / Provider</label>
+                            <input type="text" id="productBank" required class="w-full py-3 input-field text-xl font-light">
+                        </div>
+                        
+                        <div class="select-wrapper">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Category</label>
+                            <select id="productCategory" required class="w-full py-3 input-field text-xl font-light cursor-pointer">
+                                <option value="" class="bg-white text-slate-900">Select</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 relative group cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-colors">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Logo / Image</label>
+                        <input type="file" id="productImage" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div class="text-center text-slate-500 group-hover:text-slate-800 transition-colors" id="uploadPlaceholder">
+                            Click or drag to upload
+                        </div>
+                        <div id="imagePreviewContainer" class="mt-4 hidden text-center relative z-0">
+                            <img id="imagePreview" class="h-32 mx-auto object-contain mix-blend-multiply">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Description</label>
+                        <textarea id="productDescription" rows="3" required class="w-full py-3 input-field text-lg font-light resize-none"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-accent uppercase tracking-widest mb-2">Key Conditions (Highlight)</label>
+                        <input type="text" id="productConditions" required placeholder="e.g. 0% APR" class="w-full py-3 input-field text-2xl text-accent font-medium">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Ref Link</label>
+                        <input type="url" id="productUrl" required class="w-full py-3 input-field text-lg font-light" placeholder="https://...">
+                    </div>
+                    
+                    <div class="flex items-center pt-4">
+                        <input type="checkbox" id="productActive" class="w-5 h-5 accent-[#2563eb] bg-transparent border-slate-300 rounded" checked>
+                        <label class="ml-4 uppercase tracking-widest text-sm font-medium text-slate-700">Status: Active</label>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 pt-10 border-t border-slate-200">
+                        <button type="submit" class="flex-1 bg-slate-900 text-white py-4 font-bold uppercase tracking-widest hover:bg-accent transition-colors rounded-sm shadow-md">
+                            Save Entry
+                        </button>
+                        <button type="button" id="deleteProductBtn" class="md:w-1/3 border border-red-200 text-red-500 py-4 font-bold uppercase tracking-widest hover:bg-red-50 hover:border-red-300 transition-colors hidden rounded-sm">
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА КАТЕГОРИИ -->
+    <div id="categoryFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col">
+            <div class="px-6 py-6 flex justify-between items-center border-b border-slate-200 sticky top-0 bg-white z-20">
+                <h3 class="text-xl font-medium text-slate-900 tracking-widest uppercase" id="categoryFormTitle">Edit Category</h3>
+                <button onclick="closeModal('categoryFormModal')" class="text-slate-400 hover:text-accent">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 max-w-2xl mx-auto w-full py-12">
+                <form id="categoryForm" class="space-y-10">
+                    <input type="hidden" id="categoryIsEdit" value="false">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Category ID (System Key)</label>
+                        <input type="text" id="categoryId" required placeholder="e.g. loans" class="w-full py-3 input-field text-xl font-light">
+                        <p class="text-xs text-slate-500 mt-2">Unique identifier. Cannot be changed after creation.</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Display Name</label>
+                        <input type="text" id="categoryName" required placeholder="e.g. Auto Loans" class="w-full py-3 input-field text-2xl font-light">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Icon (Emoji/Text)</label>
+                        <input type="text" id="categoryIcon" required placeholder="🚗" class="w-full py-3 input-field text-2xl font-light">
+                    </div>
+                    
+                    <div class="flex items-center pt-4">
+                        <input type="checkbox" id="categoryActive" class="w-5 h-5 accent-[#2563eb] bg-transparent border-slate-300 rounded" checked>
+                        <label class="ml-4 uppercase tracking-widest text-sm font-medium text-slate-700">Status: Active</label>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 pt-10 border-t border-slate-200">
+                        <button type="submit" class="flex-1 bg-accent text-white py-4 font-bold uppercase tracking-widest hover:bg-blue-700 transition-colors rounded-sm shadow-md">
+                            Save Category
+                        </button>
+                        <button type="button" id="deleteCategoryBtn" class="md:w-1/3 border border-red-200 text-red-500 py-4 font-bold uppercase tracking-widest hover:bg-red-50 hover:border-red-300 transition-colors hidden rounded-sm">
+                            Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIG -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'finance-loan',
+            VERSION: '4.2.1' // Light Mode Edition + Add Fix
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <!-- JS LOGIC -->
+    <script>
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+        let scrollPosition = 0;
+
+        // UI HELPERS
+        function lockScroll() {
+            scrollPosition = window.pageYOffset;
+            document.body.classList.add('body-no-scroll');
+            document.body.style.top = `-${scrollPosition}px`;
+        }
+
+        function unlockScroll() {
+            document.body.classList.remove('body-no-scroll');
+            document.body.style.top = '';
+            window.scrollTo(0, scrollPosition);
+        }
+
+        function openModal(modalId) {
+            lockScroll();
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            unlockScroll();
+        }
+
+        function showErrorMessage(message, isError = true) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = `fixed top-0 left-0 w-full ${isError ? 'bg-red-500 text-white' : 'bg-accent text-white'} px-6 py-3 z-[100] font-bold tracking-widest uppercase text-center text-xs shadow-md`;
+            errorDiv.innerHTML = message;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        // AUTH ERROR HANDLER (401)
+        function handleAuthError() {
+            localStorage.removeItem('adminToken');
+            adminToken = null;
+            isAdminLoggedIn = false;
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+            unlockScroll();
+            showErrorMessage('SESSION EXPIRED. LOGIN REQUIRED.', true);
+            openModal('adminLoginModal');
+        }
+
+        window.logoutAdmin = function() {
+            localStorage.removeItem('adminToken');
+            adminToken = null;
+            isAdminLoggedIn = false;
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+            unlockScroll();
+            showErrorMessage('LOGGED OUT SUCCESSFULLY', false);
+            loadData();
+        }
+
+        window.switchAdminTab = (tab) => {
+            document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+            document.getElementById('tabBtnCategories').classList.toggle('active', tab === 'categories');
+            document.getElementById('adminTabProducts').classList.toggle('hidden', tab !== 'products');
+            document.getElementById('adminTabCategories').classList.toggle('hidden', tab !== 'categories');
+        };
+
+        // DATA FETCHING
+        async function loadData() {
+            try {
+                const headers = isAdminLoggedIn ? { 'Authorization': `Bearer ${adminToken}` } : {};
+                const [catsRes, prodsRes] = await Promise.all([
+                    fetch(`${window.CONFIG.API_BASE_URL}/categories`, { headers }),
+                    fetch(`${window.CONFIG.API_BASE_URL}/products`, { headers })
+                ]);
+                
+                if (catsRes.status === 401 || prodsRes.status === 401) {
+                    handleAuthError();
+                    return;
+                }
+                
+                if (catsRes.ok) categories = await catsRes.json();
+                if (prodsRes.ok) products = await prodsRes.json();
+                
+                document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+                document.getElementById('debugCategoriesCount').textContent = categories.length;
+                document.getElementById('debugProductsCount').textContent = products.length;
+                
+                renderCategoriesList();
+                renderCategorySelect();
+                renderProducts();
+                
+                if (isAdminLoggedIn) {
+                    renderAdminProducts();
+                    renderAdminCategories();
+                }
+            } catch (error) { 
+                showErrorMessage('SYS.ERROR: DATA FETCH FAILED'); 
+            }
+        }
+
+        // CATEGORY MENU (GIANT LIST)
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
+                        class="w-full text-left py-4 text-4xl sm:text-6xl font-light tracking-tighter hover:text-accent transition-colors border-b border-slate-200 flex justify-between items-center group ${currentCategory === 'all' ? 'text-accent' : 'text-slate-900'}">
+                    <span>Все.</span>
+                    <span class="text-sm font-medium tracking-widest text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">00</span>
+                </button>
+            `;
+            
+            categories.forEach((category, index) => {
+                const isActive = currentCategory === category.id;
+                const num = String(index + 1).padStart(2, '0');
+                const button = document.createElement('button');
+                button.className = `w-full text-left py-4 text-4xl sm:text-6xl font-light tracking-tighter hover:text-accent transition-colors border-b border-slate-200 flex justify-between items-center group ${isActive ? 'text-accent' : 'text-slate-900'}`;
+                button.innerHTML = `
+                    <span>${category.name}.</span>
+                    <span class="text-sm font-medium tracking-widest text-slate-400 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity">${num}</span>
+                `;
+                button.addEventListener('click', () => {
+                    filterByCategory(category.id);
+                    closeModal('categoriesModal');
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="" class="bg-white text-slate-900">Select Category</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.className = "bg-white text-slate-900";
+                option.textContent = category.name;
+                if (category.id === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function filterByCategory(categoryId) {
+            currentCategory = categoryId;
+            const titleEl = document.getElementById('currentCategoryTitle');
+            if (categoryId === 'all') {
+                titleEl.textContent = 'Все офферы';
+            } else {
+                const cat = categories.find(c => c.id === categoryId);
+                titleEl.textContent = cat ? cat.name : 'Офферы';
+            }
+            renderProducts();
+            renderCategoriesList(); 
+        }
+
+        // RENDER PRODUCTS LIST
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            
+            let filteredProducts = products.filter(product => {
+                const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
+                return matchesCategory && (isAdminLoggedIn ? true : product.active);
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('hidden');
+                return;
+            }
+            
+            noProducts.classList.add('hidden');
+            container.innerHTML = '';
+            
+            filteredProducts.forEach(product => {
+                const category = categories.find(c => c.id === product.category);
+                const productRow = document.createElement('div');
+                
+                productRow.className = 'product-row border-b border-slate-200 py-8 cursor-pointer group flex flex-col md:flex-row md:items-center justify-between gap-6 relative rounded-sm px-4 -mx-4';
+                
+                productRow.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="text-accent text-[10px] font-bold tracking-widest uppercase bg-blue-50 px-2 py-1 rounded-sm">${product.bank}</span>
+                            <span class="text-slate-500 font-medium text-[10px] tracking-widest uppercase">${category ? category.name : 'Misc'}</span>
+                            ${isAdminLoggedIn && !product.active ? `<span class="bg-red-100 text-red-600 font-bold text-[10px] tracking-widest uppercase px-2 py-1 rounded-sm">Hidden</span>` : ''}
+                        </div>
+                        <h3 class="text-2xl sm:text-4xl font-medium tracking-tight text-slate-900 group-hover:text-accent transition-colors">${product.name}</h3>
+                        <p class="text-slate-600 mt-3 text-sm max-w-xl line-clamp-2">${product.description}</p>
+                    </div>
+                    
+                    <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-4 min-w-[200px]">
+                        ${product.image_url ? `
+                            <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" alt="logo" class="h-12 w-auto object-contain product-img-filter hidden md:block mb-4">
+                        ` : `<div class="text-3xl hidden md:block mb-4 filter opacity-80 group-hover:opacity-100 transition-all scale-95 group-hover:scale-105">${category?.icon || ''}</div>`}
+                        
+                        <div class="text-left md:text-right">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Условия</p>
+                            <p class="text-slate-900 font-bold text-lg">${product.conditions}</p>
+                        </div>
+                        
+                        <button class="apply-btn border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white px-6 py-2 uppercase tracking-widest text-xs font-bold transition-colors md:hidden rounded-sm">
+                            Apply
+                        </button>
+                    </div>
+                `;
+                
+                productRow.addEventListener('click', (e) => {
+                    if (e.target.closest('.apply-btn')) {
+                        window.open(product.url, '_blank');
+                    } else {
+                        showProductDetails(product);
+                    }
+                });
+                
+                container.appendChild(productRow);
+            });
+        }
+
+        // PRODUCT DETAILS MODAL (Светлый стиль)
+        function showProductDetails(product) {
+            const category = categories.find(c => c.id === product.category);
+            document.getElementById('productModalBank').textContent = product.bank;
+            
+            document.getElementById('productModalContent').innerHTML = `
+                <!-- Пространство для изображения -->
+                <div class="w-full h-[40vh] md:h-[60vh] bg-slate-50 border-b border-slate-200 flex items-center justify-center p-8 relative overflow-hidden">
+                    ${product.image_url ? `
+                        <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-full object-contain filter drop-shadow-xl hover:scale-105 transition-transform duration-700 mix-blend-multiply">
+                    ` : `
+                        <div class="text-[150px] md:text-[200px] opacity-40 hover:scale-110 hover:opacity-70 transition-all duration-700">${category?.icon || 'DATA'}</div>
+                    `}
+                </div>
+
+                <!-- Контент под изображением -->
+                <div class="px-6 sm:px-20 py-12 max-w-6xl mx-auto w-full">
+                    <div class="mb-12">
+                        <p class="text-accent font-bold text-xs tracking-widest uppercase mb-4">[ ${category ? category.name : 'DATA'} ]</p>
+                        <h2 class="text-5xl md:text-7xl font-medium tracking-tighter leading-none text-slate-900">${product.name}</h2>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
+                        <div class="md:col-span-1">
+                            <p class="text-slate-400 font-bold text-xs tracking-widest uppercase mb-2 border-b border-slate-200 pb-2">Conditions</p>
+                            <p class="text-accent font-medium text-4xl mt-4">${product.conditions}</p>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <p class="text-slate-400 font-bold text-xs tracking-widest uppercase mb-2 border-b border-slate-200 pb-2">Details</p>
+                            <p class="text-slate-700 text-xl font-light leading-relaxed whitespace-pre-line mt-4">${product.description}</p>
+                        </div>
+                    </div>
+                    
+                    <button onclick="window.open('${product.url}', '_blank')"
+                            class="bg-slate-900 text-white hover:bg-accent px-12 py-6 font-bold text-xl uppercase tracking-widest transition-all w-full md:w-auto text-center border-2 border-slate-900 hover:border-accent rounded-sm shadow-lg hover:shadow-xl">
+                        Proceed to Bank
+                    </button>
+                </div>
+            `;
+            
+            openModal('productModal');
+        }
+
+        // ADMIN: AUTH
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) { showErrorMessage('ACCESS DENIED. NO PASSWORD.'); return; }
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin@finance.ru');
+                formData.append('password', password);
+                
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    isAdminLoggedIn = true;
+                    document.getElementById('adminPassword').value = '';
+                    closeModal('adminLoginModal');
+                    await loadData();
+                    openModal('adminPanelModal');
+                } else { showErrorMessage('ACCESS DENIED.'); }
+            } catch (error) { showErrorMessage('SYS.ERROR'); }
+        }
+
+        // ADMIN: PRODUCTS
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            document.getElementById('productCount').textContent = products.length;
+            container.innerHTML = products.map(product => `
+                <div class="flex items-center justify-between py-4 border-b border-slate-200 hover:bg-slate-50 px-4 -mx-4 transition-colors group rounded-sm">
+                    <div class="flex-1 pr-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-2 h-2 rounded-full ${product.active ? 'bg-accent' : 'bg-red-500'} block"></span>
+                            <h4 class="text-lg font-medium text-slate-900">${product.name}</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-widest mt-1 ml-5">${product.bank}</p>
+                    </div>
+                    <button onclick="editProduct('${product.id}')" class="text-slate-500 hover:text-slate-900 uppercase text-xs tracking-widest font-bold px-4 py-2 border border-slate-200 hover:border-slate-900 transition-colors opacity-0 group-hover:opacity-100 rounded-sm bg-white">
+                        Edit
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.openProductForm = () => {
+            document.getElementById('productFormTitle').textContent = 'NEW ENTRY';
+            document.getElementById('productForm').reset();
+            document.getElementById('productActive').checked = true;
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('deleteProductBtn').classList.add('hidden');
+            document.getElementById('productId').value = '';
+            renderCategorySelect();
+            closeModal('adminPanelModal'); openModal('productFormModal');
+        };
+
+        window.editProduct = (id) => {
+            const p = products.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('productFormTitle').textContent = 'EDIT ENTRY';
+            document.getElementById('productId').value = p.id;
+            document.getElementById('productName').value = p.name;
+            document.getElementById('productBank').value = p.bank;
+            document.getElementById('productCategory').value = p.category;
+            document.getElementById('productDescription').value = p.description;
+            document.getElementById('productConditions').value = p.conditions;
+            document.getElementById('productUrl').value = p.url;
+            document.getElementById('productActive').checked = p.active;
+            
+            if (p.image_url) {
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${p.image_url}`;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('productFormModal');
+        };
+
+        document.getElementById('productForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('productId').value;
+            const fd = new FormData();
+            fd.append('name', document.getElementById('productName').value);
+            fd.append('bank', document.getElementById('productBank').value);
+            fd.append('category', document.getElementById('productCategory').value);
+            fd.append('description', document.getElementById('productDescription').value);
+            fd.append('conditions', document.getElementById('productConditions').value);
+            fd.append('url', document.getElementById('productUrl').value);
+            fd.append('active', document.getElementById('productActive').checked);
+            
+            const file = document.getElementById('productImage').files[0];
+            if (file) fd.append('file', file);
+            
+            try {
+                const res = await fetch(`${window.CONFIG.API_BASE_URL}/products${id ? `/${id}` : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                    body: fd
+                });
+                if (res.status === 401) { handleAuthError(); return; }
+                if (res.ok) { await loadData(); closeModal('productFormModal'); openModal('adminPanelModal'); showErrorMessage('SAVED.', false); }
+                else showErrorMessage('ERR: SAVE FAILED');
+            } catch (err) { showErrorMessage('SYS.ERROR'); }
+        };
+
+        document.getElementById('deleteProductBtn').onclick = async () => {
+            const id = document.getElementById('productId').value;
+            if (!confirm('DELETE ENTRY? THIS CANNOT BE UNDONE.')) return;
+            const res = await fetch(`${window.CONFIG.API_BASE_URL}/products/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }});
+            if (res.status === 401) { handleAuthError(); return; }
+            if (res.ok) { await loadData(); closeModal('productFormModal'); openModal('adminPanelModal'); showErrorMessage('DELETED.', false); }
+        };
+
+        // ADMIN: CATEGORIES
+        function renderAdminCategories() {
+            const container = document.getElementById('adminCategoriesList');
+            container.innerHTML = categories.map(c => `
+                <div class="flex items-center justify-between py-4 border-b border-slate-200 hover:bg-slate-50 px-4 -mx-4 transition-colors group rounded-sm">
+                    <div class="flex items-center gap-4">
+                        <span class="w-2 h-2 rounded-full ${c.active ? 'bg-accent' : 'bg-red-500'} block"></span>
+                        <span class="text-xl">${c.icon}</span>
+                        <h4 class="text-lg font-medium text-slate-900">${c.name} <span class="text-xs text-slate-400 ml-2 uppercase font-bold">[${c.id}]</span></h4>
+                    </div>
+                    <button onclick="editCategory('${c.id}')" class="text-slate-500 hover:text-slate-900 uppercase text-xs tracking-widest font-bold px-4 py-2 border border-slate-200 hover:border-slate-900 transition-colors opacity-0 group-hover:opacity-100 rounded-sm bg-white">
+                        Edit
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('addCategoryBtn').onclick = () => {
+            document.getElementById('categoryFormTitle').textContent = 'NEW CATEGORY';
+            document.getElementById('categoryForm').reset();
+            document.getElementById('categoryId').readOnly = false;
+            document.getElementById('categoryIsEdit').value = 'false';
+            document.getElementById('deleteCategoryBtn').classList.add('hidden');
+            closeModal('adminPanelModal'); openModal('categoryFormModal');
+        };
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('categoryFormTitle').textContent = 'EDIT CATEGORY';
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryId').readOnly = true; 
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categoryIcon').value = c.icon;
+            document.getElementById('categoryActive').checked = c.active;
+            document.getElementById('categoryIsEdit').value = 'true';
+            document.getElementById('deleteCategoryBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('categoryFormModal');
+        };
+
+        document.getElementById('categoryForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('categoryId').value;
+            const isEdit = document.getElementById('categoryIsEdit').value === 'true';
+            const payload = {
+                id: id,
+                name: document.getElementById('categoryName').value,
+                icon: document.getElementById('categoryIcon').value,
+                active: document.getElementById('categoryActive').checked
+            };
+            try {
+                const res = await fetch(`${window.CONFIG.API_BASE_URL}/categories${isEdit ? `/${id}` : ''}`, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.status === 401) { handleAuthError(); return; }
+                if(res.ok) { await loadData(); closeModal('categoryFormModal'); openModal('adminPanelModal'); showErrorMessage('CATEGORY SAVED.', false); }
+                else showErrorMessage('ERR: SAVE FAILED');
+            } catch(err) { showErrorMessage('SYS.ERROR'); }
+        };
+
+        document.getElementById('deleteCategoryBtn').onclick = async () => {
+            const id = document.getElementById('categoryId').value;
+            if(!confirm('DELETE CATEGORY? MUST BE EMPTY.')) return;
+            const res = await fetch(`${window.CONFIG.API_BASE_URL}/categories/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }});
+            if (res.status === 401) { handleAuthError(); return; }
+            if(res.ok) { await loadData(); closeModal('categoryFormModal'); openModal('adminPanelModal'); showErrorMessage('CATEGORY DELETED.', false); }
+            else showErrorMessage('ERR: CATEGORY NOT EMPTY.');
+        };
+
+        // SETUP & EVENTS
+        document.getElementById('adminBtn').addEventListener('click', () => {
+            isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+        });
+        
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            renderCategoriesList();
+            openModal('categoriesModal');
+        });
+        
+        document.getElementById('loginBtn').addEventListener('click', adminLogin);
+        document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') adminLogin();
+        });
+        
+        document.getElementById('productImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('imagePreview').src = event.target.result;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const openModals = document.querySelectorAll('.modal-backdrop:not(.hidden)');
+                if (openModals.length > 0) closeModal(openModals[openModals.length - 1].id);
+            }
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                document.getElementById('debugPanel').classList.toggle('hidden');
+            }
+        });
+
+        document.querySelectorAll('.modal-backdrop').forEach(m => m.onclick = (e) => { if(e.target === m) closeModal(m.id); });
+
+        // INIT
+        loadData();
+    </script>
+</body>
+</html>

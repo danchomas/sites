@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансовый Помощник | Подбор продуктов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Современный, дружелюбный и чистый шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            font-family: 'Nunito', sans-serif;
+            --primary: #2563EB; /* Blue 600 */
+            --primary-hover: #1D4ED8; /* Blue 700 */
+            --text-dark: #0F172A; /* Slate 900 */
+            --text-muted: #64748B; /* Slate 500 */
+            --bg-body: #F8FAFC; /* Slate 50 */
+            --border-light: #E2E8F0; /* Slate 200 */
+        }
+        
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Скроллбары */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+
+        /* Базовые инпуты */
+        .base-input {
+            width: 100%;
+            background: #FFFFFF;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+        }
+        .base-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+        .base-input::placeholder { color: #94A3B8; }
+
+        /* Базовые кнопки */
+        .base-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: #FFFFFF;
+        }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-dark {
+            background-color: var(--text-dark);
+            color: #FFFFFF;
+        }
+        .btn-dark:hover { background-color: #1E293B; }
+        
+        /* Карточки */
+        .base-card {
+            background: #FFFFFF;
+            border: 1px solid #F1F5F9;
+            border-radius: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            transition: all 0.3s ease;
+        }
+        .base-card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            transform: translateY(-2px);
+            border-color: var(--border-light);
+        }
+
+        /* Выпадающие списки */
+        .select-wrapper { position: relative; }
+        .select-wrapper select { appearance: none; padding-right: 40px; cursor: pointer; }
+        .select-wrapper::after {
+            content: "▼"; position: absolute; right: 16px; top: 50%;
+            transform: translateY(-50%); font-size: 12px; color: var(--text-muted); pointer-events: none;
+        }
+
+        /* Чекбоксы */
+        input[type="checkbox"] {
+            appearance: none; width: 20px; height: 20px;
+            border: 2px solid var(--border-light); border-radius: 6px;
+            background: #fff; cursor: pointer; position: relative; transition: all 0.2s;
+        }
+        input[type="checkbox"]:checked { background: var(--primary); border-color: var(--primary); }
+        input[type="checkbox"]:checked::after {
+            content: "✓"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-weight: 800; font-size: 12px;
+        }
+
+        /* Модальные окна (классический fade+slide) */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+            opacity: 0; animation: fadeIn 0.2s ease-out forwards;
+        }
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 24px;
+            width: 100%; max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            display: flex; flex-direction: column;
+        }
+        .modal-enter { animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes modalSlideUp {
+            from { transform: translateY(20px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Категории (кнопки с рамкой) */
+        .category-tab {
+            background: #FFFFFF;
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer;
+        }
+        .category-tab:hover { border-color: var(--primary); color: var(--primary); }
+        .category-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Debug Monitor -->
+    <div id="debugPanel" class="fixed bottom-4 left-4 bg-slate-900 text-white p-4 rounded-xl text-xs z-[100] shadow-xl border border-slate-700">
+        <div class="font-bold text-slate-300 mb-2 border-b border-slate-700 pb-1">Системная отладка</div>
+        <div class="flex gap-2">API: <span id="debugApiUrl" class="text-blue-400">-</span></div>
+        <div class="flex gap-2">Категории: <span id="debugCategoriesCount" class="text-emerald-400">0</span></div>
+        <div class="flex gap-2">Продукты: <span id="debugProductsCount" class="text-purple-400">0</span></div>
+    </div>
+
+    <!-- HEADER (Чистая белая шапка) -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            
+            <!-- Логотип -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.reload()">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-600/20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <span class="font-extrabold text-xl text-slate-900 tracking-tight">FinSelect</span>
+            </div>
+
+            <!-- Навигация справа -->
+            <div class="flex items-center gap-2">
+                <button id="menuBtn" class="md:hidden p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <button id="adminBtn" class="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Вход для партнеров
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION (Мягкий баннер с поиском) -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8">
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 rounded-3xl p-8 md:p-12 text-center shadow-lg relative overflow-hidden">
+            <!-- Декоративные круги на фоне -->
+            <div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl"></div>
+            
+            <div class="relative z-10">
+                <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">Подберем лучшее решение</h1>
+                <p class="text-slate-300 text-base md:text-lg mb-8 max-w-2xl mx-auto">Сравнивайте финансовые продукты от проверенных банков и экономьте свое время и деньги.</p>
+                
+                <!-- Поиск внутри Hero -->
+                <div class="max-w-3xl mx-auto relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg class="w-6 h-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Какую карту или кредит вы ищете?" 
+                           class="w-full pl-12 pr-4 py-4 md:py-5 bg-white rounded-2xl text-slate-900 text-lg shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition-all border border-white focus:border-blue-500">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CATEGORIES (Горизонтальный список) -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div class="flex items-center gap-3 overflow-x-auto no-scrollbar pb-4" id="categoryContainer">
+            <!-- Категории через JS -->
+            <button class="category-tab category-btn active" data-category="all">
+                <span class="text-xl">🌟</span> Все продукты
+            </button>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT (Grid карточек) -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-24">
+        
+        <div class="flex items-end justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900" id="currentCategoryTitle">Все продукты</h2>
+            <span class="text-sm font-medium text-slate-500 hidden sm:block">Актуальные данные</span>
+        </div>
+
+        <div id="productsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Карточки генерируются через JS -->
+        </div>
+        
+        <!-- Пустое состояние -->
+        <div id="noProducts" class="hidden bg-white border border-slate-200 rounded-3xl p-16 text-center shadow-sm w-full col-span-full mt-4">
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-900 mb-2">Продуктов не найдено</h3>
+            <p class="text-slate-500">По вашему запросу нет активных предложений. Попробуйте изменить фильтры.</p>
+        </div>
+
+    </main>
+
+    <!-- ================= БАЗОВЫЕ КРАСИВЫЕ МОДАЛКИ ================= -->
+
+    <!-- МОБИЛЬНОЕ МЕНЮ КАТЕГОРИЙ -->
+    <div id="categoriesModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-sm w-full !mr-auto !h-full !rounded-none !max-h-full">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-slate-900">Каталог</h3>
+                <button onclick="closeModal('categoriesModal')" class="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-full transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1 flex flex-col gap-2" id="categoriesList">
+                <!-- Категории через JS -->
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-slate-50 mt-auto">
+                <button class="w-full base-btn btn-dark" onclick="document.getElementById('adminBtn').click(); closeModal('categoriesModal');">
+                    Вход для партнеров
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ДЕТАЛИ ПРОДУКТА -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-2xl">
+            <!-- Шапка модалки -->
+            <div class="p-6 border-b border-slate-100 flex justify-between items-start sticky top-0 bg-white/95 backdrop-blur-md z-10">
+                <div class="flex gap-4 items-center">
+                    <div class="w-16 h-16 rounded-2xl border border-slate-100 bg-white flex items-center justify-center p-2 shadow-sm flex-shrink-0" id="productModalImageContainer">
+                        <!-- Иконка/Лого -->
+                    </div>
+                    <div>
+                        <span class="inline-block px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-bold uppercase tracking-wider mb-1" id="productModalBank">Банк</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight" id="productModalTitle">Название продукта</h2>
+                    </div>
+                </div>
+                <button onclick="closeModal('productModal')" class="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-full transition-colors flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 sm:p-8">
+                <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-8 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-32 bg-blue-100/50 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                    <p class="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2 relative z-10">Главные условия</p>
+                    <p class="text-2xl font-extrabold text-slate-900 relative z-10" id="productModalConditions">Условия</p>
+                </div>
+
+                <div class="mb-8">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Подробное описание
+                    </h4>
+                    <p class="text-slate-600 leading-relaxed whitespace-pre-line" id="productModalDescription">Описание</p>
+                </div>
+
+                <button id="productModalBtn" class="base-btn btn-primary w-full py-4 text-lg">
+                    Оформить заявку
+                </button>
+                <p class="text-center text-xs text-slate-400 mt-3">Вы будете перенаправлены на официальный сайт банка</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- АВТОРИЗАЦИЯ АДМИНА -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-md p-8">
+            <div class="flex justify-between items-start mb-6">
+                <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <button onclick="closeModal('adminLoginModal')" class="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-full transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <h3 class="text-2xl font-extrabold text-slate-900 mb-2">Вход в систему</h3>
+            <p class="text-slate-500 font-medium mb-8">Управление базой финансовых офферов</p>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Пароль администратора</label>
+                    <input type="password" id="adminPassword" class="base-input text-lg tracking-widest font-mono" placeholder="••••••••">
+                </div>
+                <button id="loginBtn" class="base-btn btn-dark w-full py-4">
+                    Войти
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- АДМИН ПАНЕЛЬ -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-5xl h-[90vh]">
+            <!-- Шапка админки -->
+            <div class="p-6 border-b border-slate-200 bg-white sticky top-0 z-20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h3 class="text-2xl font-extrabold text-slate-900">Управление контентом</h3>
+                    <p class="text-sm font-medium text-slate-500 mt-1">Всего продуктов: <span id="productCount" class="text-blue-600 font-bold">0</span></p>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <button id="addProductBtn" class="base-btn btn-primary flex-1 sm:flex-none">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Добавить
+                    </button>
+                    <button onclick="closeModal('adminPanelModal')" class="p-3 text-slate-500 hover:text-slate-900 bg-slate-100 rounded-xl transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 p-6 bg-slate-50 overflow-y-auto">
+                <div class="grid gap-4" id="adminProductsList">
+                    <!-- Продукты для админа (Список карточек) -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА ПРОДУКТА (Редактор) -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-3xl h-[90vh]">
+            <div class="p-6 border-b border-slate-200 bg-white sticky top-0 z-20 flex justify-between items-center">
+                <h3 class="text-xl font-extrabold text-slate-900" id="productFormTitle">Настройка продукта</h3>
+                <button onclick="closeModal('productFormModal')" class="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 rounded-full transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="flex-1 p-6 sm:p-8 overflow-y-auto bg-white">
+                <form id="productForm" class="space-y-6">
+                    <input type="hidden" id="productId">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Название оффера <span class="text-red-500">*</span></label>
+                            <input type="text" id="productName" required class="base-input text-lg font-semibold">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Банк / Компания <span class="text-red-500">*</span></label>
+                            <input type="text" id="productBank" required class="base-input">
+                        </div>
+                        
+                        <div class="select-wrapper">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Категория <span class="text-red-500">*</span></label>
+                            <select id="productCategory" required class="base-input bg-white">
+                                <option value="">Выберите категорию...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Изображение (Логотип)</label>
+                        <div class="relative border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
+                            <input type="file" id="productImage" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <div id="uploadPlaceholder">
+                                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                                    <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <span class="text-sm font-semibold text-slate-500">Нажмите или перетащите файл</span>
+                            </div>
+                            <div id="imagePreviewContainer" class="hidden relative z-0 flex justify-center">
+                                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm inline-block">
+                                    <img id="imagePreview" class="h-16 object-contain">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Полное описание <span class="text-red-500">*</span></label>
+                        <textarea id="productDescription" rows="4" required class="base-input resize-none leading-relaxed"></textarea>
+                    </div>
+                    
+                    <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                        <label class="block text-sm font-bold text-blue-700 mb-2">Главные условия (Выделенный блок) <span class="text-red-500">*</span></label>
+                        <input type="text" id="productConditions" required placeholder="Например: До 120 дней без %" class="base-input !border-blue-200 focus:!border-blue-500 font-bold text-lg text-slate-900">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Партнерская ссылка <span class="text-red-500">*</span></label>
+                        <input type="url" id="productUrl" required class="base-input text-blue-600" placeholder="https://...">
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <input type="checkbox" id="productActive" checked>
+                        <label class="text-sm font-bold text-slate-900">Опубликовать (продукт активен и виден всем)</label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100">
+                        <button type="submit" class="base-btn btn-primary flex-1 py-4 text-lg">
+                            Сохранить продукт
+                        </button>
+                        <button type="button" id="deleteProductBtn" class="base-btn bg-red-50 text-red-600 hover:bg-red-100 sm:w-auto px-8 hidden">
+                            Удалить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- API CONFIGURATION -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'FinSelect',
+            VERSION: '13.0.0', // Clean Modern Edition
+            checkApiHealth: async function() {
+                try {
+                    const response = await fetch(`${this.API_BASE_URL}/health`, { headers: { 'Accept': 'application/json' } });
+                    return response.ok;
+                } catch (error) { return false; }
+            }
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+        let scrollPosition = 0;
+
+        function lockScroll() {
+            scrollPosition = window.pageYOffset;
+            document.body.classList.add('body-no-scroll');
+            document.body.style.top = `-${scrollPosition}px`;
+        }
+
+        function unlockScroll() {
+            document.body.classList.remove('body-no-scroll');
+            document.body.style.top = '';
+            window.scrollTo(0, scrollPosition);
+        }
+
+        function openModal(modalId) {
+            lockScroll();
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            unlockScroll();
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+            document.getElementById('debugCategoriesCount').textContent = categories ? categories.length : 0;
+            document.getElementById('debugProductsCount').textContent = products ? products.length : 0;
+        }
+
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories`);
+                if (!response.ok) throw new Error();
+                categories = await response.json();
+                updateDebugInfo();
+                renderCategoryButtons();
+                renderCategoriesList();
+                renderCategorySelect();
+            } catch (error) {
+                showErrorMessage('Не удалось загрузить справочник категорий.');
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products`);
+                if (!response.ok) throw new Error();
+                products = await response.json();
+                updateDebugInfo();
+                renderProducts();
+                if (isAdminLoggedIn) renderAdminProducts();
+            } catch (error) {
+                showErrorMessage('Не удалось загрузить базу предложений.');
+            }
+        }
+
+        // КНОПКИ КАТЕГОРИЙ (Табы под Hero блоком)
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryContainer');
+            if (!container) return;
+            
+            const allButton = container.querySelector('[data-category="all"]');
+            container.innerHTML = '';
+            container.appendChild(allButton);
+            
+            if (!categories) return;
+            
+            categories.forEach((category) => {
+                const button = document.createElement('button');
+                button.className = `category-tab category-btn`;
+                button.dataset.category = category.id;
+                button.innerHTML = `<span class="text-xl opacity-80">${category.icon}</span> ${category.name}`;
+                button.addEventListener('click', () => filterByCategory(category.id));
+                container.appendChild(button);
+            });
+            updateActiveCategory();
+        }
+
+        // СПИСОК КАТЕГОРИЙ (Боковое меню для мобилок)
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
+                        class="w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-bold ${currentCategory === 'all' ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'}">
+                    <span class="text-2xl opacity-80">🌟</span> Все продукты
+                </button>
+            `;
+            
+            if (!categories) return;
+            categories.forEach((category) => {
+                const isActive = currentCategory === category.id;
+                const button = document.createElement('button');
+                button.className = `w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-bold ${isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'}`;
+                button.innerHTML = `<span class="text-2xl opacity-80">${category.icon}</span> ${category.name}`;
+                button.addEventListener('click', () => {
+                    filterByCategory(category.id);
+                    closeModal('categoriesModal');
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Выберите категорию...</option>';
+            if (!categories) return;
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                if (category.id === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function filterByCategory(categoryId) {
+            currentCategory = categoryId;
+            
+            const titleEl = document.getElementById('currentCategoryTitle');
+            if (categoryId === 'all') {
+                titleEl.textContent = 'Все продукты';
+            } else {
+                const cat = categories.find(c => c.id === categoryId);
+                titleEl.textContent = cat ? cat.name : 'Продукты';
+            }
+            
+            updateActiveCategory();
+            renderProducts();
+            renderCategoriesList(); // Обновить мобильное меню
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if(btn.dataset.category === currentCategory) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function performSearch() {
+            currentSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+            renderProducts();
+        }
+
+        // РЕНДЕР КАРТОЧЕК (Классический SaaS Grid)
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            if (!container) return;
+            
+            let filteredProducts = products.filter(product => {
+                const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
+                const matchesSearch = !currentSearch || 
+                    product.name.toLowerCase().includes(currentSearch) ||
+                    product.bank.toLowerCase().includes(currentSearch);
+                return matchesCategory && matchesSearch && product.active;
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('hidden');
+                return;
+            }
+            
+            noProducts.classList.add('hidden');
+            container.innerHTML = '';
+            
+            filteredProducts.forEach(product => {
+                const category = categories.find(c => c.id === product.category);
+                const productCard = document.createElement('div');
+                
+                productCard.className = 'base-card p-6 flex flex-col h-full cursor-pointer group bg-white';
+                
+                productCard.innerHTML = `
+                    <div class="flex items-start gap-4 mb-5">
+                        <div class="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center p-2 flex-shrink-0">
+                            ${product.image_url ? `
+                                <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="max-w-full max-h-full object-contain">
+                            ` : `
+                                <span class="text-2xl opacity-50">${category?.icon || '📄'}</span>
+                            `}
+                        </div>
+                        <div class="flex-1 min-w-0 pt-1">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 truncate">${product.bank}</span>
+                            <h3 class="text-xl font-extrabold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">${product.name}</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50/50 border border-blue-100/50 rounded-xl p-4 mb-4 group-hover:bg-blue-50 transition-colors">
+                        <p class="text-lg font-bold text-slate-900">${product.conditions}</p>
+                    </div>
+                    
+                    <p class="text-sm font-medium text-slate-500 line-clamp-2 mb-6 flex-grow leading-relaxed">${product.description}</p>
+                    
+                    <div class="mt-auto">
+                        <button class="apply-btn base-btn w-full bg-slate-100 text-slate-700 hover:bg-slate-200 group-hover:bg-slate-900 group-hover:text-white">
+                            Изучить предложение
+                        </button>
+                    </div>
+                `;
+                
+                productCard.addEventListener('click', (e) => {
+                    if (e.target.closest('.apply-btn')) {
+                        showProductDetails(product, category);
+                    } else {
+                        showProductDetails(product, category);
+                    }
+                });
+                
+                container.appendChild(productCard);
+            });
+        }
+
+        // ДЕТАЛИ ПРОДУКТА
+        function showProductDetails(product, category) {
+            document.getElementById('productModalBank').textContent = product.bank;
+            document.getElementById('productModalTitle').textContent = product.name;
+            document.getElementById('productModalConditions').textContent = product.conditions;
+            document.getElementById('productModalDescription').textContent = product.description;
+            
+            const imgContainer = document.getElementById('productModalImageContainer');
+            if (product.image_url) {
+                imgContainer.innerHTML = `<img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="max-w-full max-h-full object-contain">`;
+            } else {
+                imgContainer.innerHTML = `<span class="text-4xl opacity-50">${category?.icon || '📄'}</span>`;
+            }
+            
+            const btn = document.getElementById('productModalBtn');
+            btn.onclick = () => window.open(product.url, '_blank');
+            
+            openModal('productModal');
+        }
+
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) { showErrorMessage('Укажите пароль администратора.'); return; }
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin@finance.ru');
+                formData.append('password', password);
+                
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    isAdminLoggedIn = true;
+                    closeModal('adminLoginModal');
+                    openModal('adminPanelModal');
+                    renderAdminProducts();
+                } else { showErrorMessage('Неверный пароль. Доступ запрещен.'); }
+            } catch (error) { showErrorMessage('Сервер недоступен.'); }
+        }
+
+        // АДМИНКА (Список)
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            document.getElementById('productCount').textContent = products.length;
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'bg-white border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row justify-between md:items-center gap-4 hover:shadow-md transition-shadow';
+                item.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${product.active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">${product.bank}</div>
+                            <h4 class="text-lg font-extrabold text-slate-900">${product.name}</h4>
+                        </div>
+                    </div>
+                    <button onclick="editProduct('${product.id}')" class="base-btn bg-slate-100 text-slate-700 hover:bg-slate-200 w-full md:w-auto">
+                        Настроить
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function editProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            document.getElementById('productFormTitle').textContent = 'Изменить продукт';
+            document.getElementById('productId').value = productId;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productBank').value = product.bank;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productConditions').value = product.conditions;
+            document.getElementById('productUrl').value = product.url;
+            document.getElementById('productActive').checked = product.active;
+            
+            if (product.image_url) {
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${product.image_url}`;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+            
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            closeModal('adminPanelModal');
+            openModal('productFormModal');
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Подтвердите удаление продукта. Восстановить данные будет невозможно.')) return;
+            try {
+                if (!adminToken) return;
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                }
+            } catch (error) { showErrorMessage('Сбой удаления. Проверьте соединение.'); }
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            
+            const productId = document.getElementById('productId').value;
+            const isEdit = !!productId;
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('bank', document.getElementById('productBank').value);
+            formData.append('category', document.getElementById('productCategory').value);
+            formData.append('description', document.getElementById('productDescription').value);
+            formData.append('conditions', document.getElementById('productConditions').value);
+            formData.append('url', document.getElementById('productUrl').value);
+            formData.append('active', document.getElementById('productActive').checked);
+            
+            const imageFile = document.getElementById('productImage').files[0];
+            if (imageFile) formData.append('file', imageFile);
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/products/${productId}` : `${window.CONFIG.API_BASE_URL}/products`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка при сохранении на сервер.');
+            } catch (error) { showErrorMessage('Ошибка соединения.'); }
+        }
+
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-2xl shadow-xl z-[9999] font-bold flex items-center gap-3';
+            errorDiv.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>${message}`;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        async function initApp() {
+            const isApiAvailable = await window.CONFIG.checkApiHealth();
+            if (isApiAvailable) {
+                await loadCategories();
+                await loadProducts();
+                bindEvents();
+            } else {
+                showErrorMessage('Система временно недоступна.');
+            }
+        }
+
+        function bindEvents() {
+            document.getElementById('searchInput').addEventListener('input', performSearch);
+            
+            const openAdmin = () => isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+            document.getElementById('adminBtn').addEventListener('click', openAdmin);
+            
+            document.getElementById('menuBtn').addEventListener('click', () => {
+                renderCategoriesList();
+                openModal('categoriesModal');
+            });
+            
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') adminLogin();
+            });
+            
+            document.getElementById('productForm').addEventListener('submit', saveProduct);
+            
+            document.getElementById('addProductBtn').addEventListener('click', () => {
+                document.getElementById('productFormTitle').textContent = 'Добавление продукта';
+                document.getElementById('productForm').reset();
+                document.getElementById('productActive').checked = true;
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('deleteProductBtn').classList.add('hidden');
+                document.getElementById('productId').value = '';
+                renderCategorySelect();
+                closeModal('adminPanelModal');
+                openModal('productFormModal');
+            });
+            
+            document.getElementById('deleteProductBtn').addEventListener('click', () => {
+                const productId = document.getElementById('productId').value;
+                if (productId) deleteProduct(productId);
+            });
+            
+            document.getElementById('productImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('imagePreview').src = event.target.result;
+                        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                        document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal.id);
+                });
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal-backdrop:not(.hidden)');
+                    if (openModals.length > 0) closeModal(openModals[openModals.length - 1].id);
+                }
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    document.getElementById('debugPanel').classList.toggle('hidden');
+                }
+            });
+        }
+
+        window.closeModal = closeModal;
+        window.filterByCategory = filterByCategory;
+        window.editProduct = editProduct;
+        window.deleteProduct = deleteProduct;
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

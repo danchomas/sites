@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансовый маркетплейс | Подбор офферов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Строгий банковский шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            font-family: 'Roboto', sans-serif;
+            --primary: #0F172A; /* Slate 900 */
+            --accent: #059669; /* Emerald 600 */
+            --bg-color: #F8FAFC; /* Slate 50 */
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: #334155; /* Slate 700 */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Управление скроллбаром */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+
+        /* Элементы форм */
+        .form-input {
+            width: 100%;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            color: #1E293B;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: inline-flex; justify-content: center; align-items: center;
+        }
+        .btn-primary:hover { background-color: #1E293B; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-success {
+            background-color: var(--accent);
+            color: white;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .btn-success:hover { background-color: #047857; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2); }
+
+        /* Выпадающий список */
+        .select-wrapper { position: relative; }
+        .select-wrapper select { appearance: none; padding-right: 32px; }
+        .select-wrapper::after {
+            content: ""; position: absolute; right: 14px; top: 50%;
+            transform: translateY(-50%);
+            width: 0; height: 0;
+            border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid #64748B;
+            pointer-events: none;
+        }
+
+        /* Модальные окна */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(2px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 16px;
+            width: 100%; max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex; flex-direction: column;
+        }
+        
+        /* Для бокового меню мобилок */
+        #categoriesModal .modal-content {
+            height: 100%; max-height: 100vh; border-radius: 0; max-width: 320px; margin-right: auto;
+        }
+        #categoriesModal.modal-backdrop { justify-content: flex-start; padding: 0; }
+
+        .modal-enter { animation: fadeScale 0.2s ease-out; }
+        #categoriesModal .modal-enter { animation: slideRight 0.3s ease-out; }
+
+        @keyframes fadeScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideRight {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+
+        /* Бейдж партнера */
+        .badge-verified {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #F0FDF4; color: #059669;
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 4px 8px; border-radius: 4px; border: 1px solid #D1FAE5;
+        }
+
+        /* Вкладки админки */
+        .admin-tab { padding-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; border-bottom: 2px solid transparent; color: #64748B; transition: all 0.2s; }
+        .admin-tab.active { color: #2563EB; border-bottom-color: #2563EB; }
+        .admin-tab:hover:not(.active) { color: #0F172A; }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Debug Panel -->
+    <div id="debugPanel" class="fixed bottom-4 right-4 bg-slate-800 text-white p-4 rounded-lg text-xs z-[100] shadow-xl">
+        <div class="font-bold text-slate-300 mb-2 border-b border-slate-600 pb-1">Системный монитор</div>
+        <div>API: <span id="debugApiUrl" class="text-blue-400 font-mono">-</span></div>
+        <div>Категории: <span id="debugCategoriesCount" class="text-emerald-400 font-mono">0</span></div>
+        <div>Продукты: <span id="debugProductsCount" class="text-emerald-400 font-mono">0</span></div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            
+            <!-- Логотип и Гамбургер -->
+            <div class="flex items-center gap-4">
+                <button id="menuBtn" class="lg:hidden p-2 -ml-2 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.reload()">
+                    <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <span class="font-bold text-xl text-slate-900 hidden sm:block tracking-tight">FinMarket</span>
+                </div>
+            </div>
+
+            <!-- Поиск -->
+            <div class="flex-1 max-w-2xl relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" id="searchInput" placeholder="Поиск по банкам, картам, кредитам..." class="form-input pl-10 bg-slate-50 border-transparent focus:bg-white w-full">
+            </div>
+
+            <!-- Админка -->
+            <div class="flex items-center">
+                <button id="adminBtn" class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 p-2 rounded-md hover:bg-slate-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="hidden sm:block">Партнерам</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN LAYOUT -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-8 items-start pt-6 pb-20">
+        
+        <!-- SIDEBAR (Категории на Desktop) -->
+        <aside class="hidden lg:block w-64 flex-shrink-0 sticky top-24">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-3">Финансовые продукты</h3>
+            <nav class="flex flex-col gap-1" id="categoryContainer">
+                <!-- Категории генерируются через JS -->
+                <button class="category-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3 transition-colors bg-slate-100 text-blue-600" data-category="all">
+                    <span class="text-lg">📊</span> Все предложения
+                </button>
+            </nav>
+
+            <div class="mt-8 bg-blue-50 rounded-xl p-4 border border-blue-100">
+                <div class="text-blue-600 mb-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <h4 class="text-sm font-bold text-blue-900 mb-1">Надежно и безопасно</h4>
+                <p class="text-xs text-blue-700">Мы работаем только с лицензированными банками РФ.</p>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT (Список офферов) -->
+        <main class="flex-1 min-w-0 w-full">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-bold text-slate-900" id="currentCategoryTitle">Все предложения</h1>
+                <span class="text-sm text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 hidden sm:block">Обновлено сегодня</span>
+            </div>
+
+            <div id="productsList" class="flex flex-col gap-4">
+                <!-- Карточки генерируются через JS -->
+            </div>
+            
+            <!-- Пустое состояние -->
+            <div id="noProducts" class="hidden bg-white border border-slate-200 rounded-xl p-12 text-center">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Предложений не найдено</h3>
+                <p class="text-slate-500 text-sm">Попробуйте изменить параметры поиска или выбрать другую категорию.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= СТРОГИЕ МОДАЛЬНЫЕ ОКНА ================= -->
+
+    <!-- МОБИЛЬНОЕ МЕНЮ КАТЕГОРИЙ (Сбоку) -->
+    <div id="categoriesModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <span class="font-bold text-slate-900">Меню</span>
+                </div>
+                <button onclick="closeModal('categoriesModal')" class="p-2 text-slate-400 hover:text-slate-700 bg-white rounded-md border border-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Продукты</h3>
+                <div class="flex flex-col gap-1" id="categoriesList">
+                    <!-- Категории для мобилки -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ДЕТАЛИ ПРОДУКТА (С широким баннером) -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter relative !p-0">
+            <!-- Верхняя плашка для закрытия (поверх баннера) -->
+            <div class="absolute top-0 w-full p-4 flex justify-between items-center z-20 bg-gradient-to-b from-white/80 to-transparent">
+                <span class="text-sm font-bold text-slate-700 bg-white/90 px-3 py-1 rounded-md shadow-sm" id="productModalBank">Банк</span>
+                <button onclick="closeModal('productModal')" class="p-2 text-slate-600 bg-white/90 rounded-full shadow-sm hover:bg-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="flex flex-col h-full" id="productModalContent">
+                <!-- Контент детализации -->
+            </div>
+        </div>
+    </div>
+
+    <!-- АВТОРИЗАЦИЯ АДМИНА -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-md">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-900">Вход для партнеров</h3>
+                <button onclick="closeModal('adminLoginModal')" class="text-slate-400 hover:text-slate-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="bg-blue-50 text-blue-700 p-4 rounded-lg text-sm mb-6 flex items-start gap-3">
+                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p>Панель управления предназначена только для авторизованных сотрудников и партнеров системы.</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Пароль доступа</label>
+                        <input type="password" id="adminPassword" class="form-input" placeholder="Введите пароль">
+                    </div>
+                    <button id="loginBtn" class="btn-primary w-full py-3">
+                        Войти в панель
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ПАНЕЛЬ АДМИНА (Табличный вид с Вкладками) -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-4xl h-[90vh]">
+            <!-- Шапка админки -->
+            <div class="p-6 border-b border-slate-200 bg-white sticky top-0 z-10">
+                <div class="flex flex-col sm:flex-row justify-between gap-4 sm:items-start mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900">Управление каталогом</h3>
+                        <p class="text-sm text-slate-500 mt-1">Настройка предложений и разделов портала</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="logoutAdmin()" class="text-sm font-medium text-red-500 hover:text-red-700 transition-colors">Выйти</button>
+                        <button onclick="closeModal('adminPanelModal')" class="p-2 text-slate-400 hover:text-slate-700 bg-slate-100 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Вкладки -->
+                <div class="flex gap-6 border-b border-slate-200">
+                    <button id="tabBtnProducts" onclick="switchAdminTab('products')" class="admin-tab active flex items-center gap-2">
+                        Офферы <span id="productCount" class="bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs">0</span>
+                    </button>
+                    <button id="tabBtnCategories" onclick="switchAdminTab('categories')" class="admin-tab">
+                        Категории
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto bg-slate-50 p-6">
+                
+                <!-- Вкладка PRODUCTS -->
+                <div id="adminTabProducts">
+                    <div class="flex justify-end mb-4">
+                        <button id="addProductBtn" class="btn-success px-4 py-2 text-sm flex items-center gap-2 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Добавить оффер
+                        </button>
+                    </div>
+                    <!-- Заголовок таблицы -->
+                    <div class="hidden md:flex text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-4">
+                        <div class="w-12">Статус</div>
+                        <div class="flex-1">Название / Банк</div>
+                        <div class="w-24 text-right">Действия</div>
+                    </div>
+                    <div class="flex flex-col gap-2" id="adminProductsList"></div>
+                </div>
+
+                <!-- Вкладка CATEGORIES -->
+                <div id="adminTabCategories" class="hidden">
+                    <div class="flex justify-end mb-4">
+                        <button id="addCategoryBtn" class="btn-primary px-4 py-2 text-sm flex items-center gap-2 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Новая категория
+                        </button>
+                    </div>
+                    <!-- Заголовок таблицы -->
+                    <div class="hidden md:flex text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-4">
+                        <div class="flex-1">Символ / Название</div>
+                        <div class="w-32">Системный ID</div>
+                        <div class="w-24 text-right">Действия</div>
+                    </div>
+                    <div class="flex flex-col gap-2" id="adminCategoriesList"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА ПРОДУКТА -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-2xl h-[90vh]">
+            <div class="p-6 border-b border-slate-200 sticky top-0 bg-white z-20 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-900" id="productFormTitle">Редактирование оффера</h3>
+                <button onclick="closeModal('productFormModal')" class="text-slate-400 hover:text-slate-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 flex-1 overflow-y-auto">
+                <form id="productForm" class="space-y-6">
+                    <input type="hidden" id="productId">
+                    
+                    <!-- Основные данные -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                        <h4 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Основная информация</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Название продукта <span class="text-red-500">*</span></label>
+                            <input type="text" id="productName" required class="form-input">
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Банк / МФО <span class="text-red-500">*</span></label>
+                                <input type="text" id="productBank" required class="form-input">
+                            </div>
+                            
+                            <div class="select-wrapper">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Категория <span class="text-red-500">*</span></label>
+                                <select id="productCategory" required class="form-input bg-white cursor-pointer">
+                                    <option value="">Выберите...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Логотип / Изображение</label>
+                            <div class="relative border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-100 transition-colors cursor-pointer bg-white">
+                                <input type="file" id="productImage" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                <div id="uploadPlaceholder" class="text-slate-500 flex flex-col items-center">
+                                    <svg class="w-8 h-8 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <span class="text-sm font-medium">Нажмите для загрузки файла</span>
+                                </div>
+                                <div id="imagePreviewContainer" class="hidden relative z-0 flex justify-center">
+                                    <img id="imagePreview" class="h-16 object-contain">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Маркетинг и ссылки -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                        <h4 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Условия и ссылки</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Краткие условия (выделение) <span class="text-red-500">*</span></label>
+                            <input type="text" id="productConditions" required placeholder="Например: Кэшбэк до 30%" class="form-input font-medium text-emerald-700 bg-emerald-50 border-emerald-200 focus:border-emerald-500">
+                            <p class="text-xs text-slate-500 mt-1">Отображается крупно на карточке продукта</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Полное описание <span class="text-red-500">*</span></label>
+                            <textarea id="productDescription" rows="4" required class="form-input resize-none"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Реферальная ссылка <span class="text-red-500">*</span></label>
+                            <input type="url" id="productUrl" required class="form-input text-blue-600" placeholder="https://...">
+                        </div>
+                    </div>
+                    
+                    <!-- Статус -->
+                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <div>
+                            <p class="text-sm font-bold text-slate-900">Статус публикации</p>
+                            <p class="text-xs text-slate-500">Отображать оффер в публичном каталоге</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="productActive" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200">
+                        <button type="submit" class="btn-primary flex-1 py-3">
+                            Сохранить оффер
+                        </button>
+                        <button type="button" id="deleteProductBtn" class="px-6 py-3 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors hidden">
+                            Удалить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА КАТЕГОРИИ -->
+    <div id="categoryFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-xl h-[80vh]">
+            <div class="p-6 border-b border-slate-200 sticky top-0 bg-white z-20 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-900" id="categoryFormTitle">Управление категорией</h3>
+                <button onclick="closeModal('categoryFormModal')" class="text-slate-400 hover:text-slate-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 flex-1 overflow-y-auto">
+                <form id="categoryForm" class="space-y-6">
+                    <input type="hidden" id="categoryIsEdit" value="false">
+                    
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Системный ID (ключ) <span class="text-red-500">*</span></label>
+                            <input type="text" id="categoryId" required placeholder="напр. auto-loans" class="form-input font-mono">
+                            <p class="text-xs text-slate-500 mt-1">Уникальный идентификатор (латиница). Нельзя изменить после создания.</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Название категории <span class="text-red-500">*</span></label>
+                            <input type="text" id="categoryName" required placeholder="напр. Автокредиты" class="form-input">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Иконка (Эмодзи) <span class="text-red-500">*</span></label>
+                            <input type="text" id="categoryIcon" required placeholder="🚗" class="form-input text-lg w-24 text-center">
+                        </div>
+                    </div>
+                    
+                    <!-- Статус -->
+                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <div>
+                            <p class="text-sm font-bold text-slate-900">Категория активна</p>
+                            <p class="text-xs text-slate-500">Показывать в боковом меню</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="categoryActive" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200">
+                        <button type="submit" class="btn-primary flex-1 py-3">
+                            Сохранить категорию
+                        </button>
+                        <button type="button" id="deleteCategoryBtn" class="px-6 py-3 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors hidden">
+                            Удалить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- КОНФИГУРАЦИЯ -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'FinMarket',
+            VERSION: '10.1.0', // Bank Style + Admin Categories + Full Width Banner
+            checkApiHealth: async function() {
+                try {
+                    const response = await fetch(`${this.API_BASE_URL}/health`, { headers: { 'Accept': 'application/json' } });
+                    return response.ok;
+                } catch (error) { return false; }
+            }
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <!-- JS ЛОГИКА -->
+    <script>
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+        let scrollPosition = 0;
+
+        function lockScroll() {
+            scrollPosition = window.pageYOffset;
+            document.body.classList.add('body-no-scroll');
+            document.body.style.top = `-${scrollPosition}px`;
+        }
+
+        function unlockScroll() {
+            document.body.classList.remove('body-no-scroll');
+            document.body.style.top = '';
+            window.scrollTo(0, scrollPosition);
+        }
+
+        function openModal(modalId) {
+            lockScroll();
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            unlockScroll();
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+            document.getElementById('debugCategoriesCount').textContent = categories ? categories.length : 0;
+            document.getElementById('debugProductsCount').textContent = products ? products.length : 0;
+        }
+
+        window.logoutAdmin = function() {
+            localStorage.removeItem('adminToken');
+            adminToken = null;
+            isAdminLoggedIn = false;
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+            unlockScroll();
+            showErrorMessage('Сеанс завершен.', true);
+            loadProducts();
+        }
+
+        window.switchAdminTab = (tab) => {
+            document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+            document.getElementById('tabBtnCategories').classList.toggle('active', tab === 'categories');
+            document.getElementById('adminTabProducts').classList.toggle('hidden', tab !== 'products');
+            document.getElementById('adminTabCategories').classList.toggle('hidden', tab !== 'categories');
+        };
+
+        // ЗАГРУЗКА ДАННЫХ
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories`);
+                if (!response.ok) throw new Error();
+                categories = await response.json();
+                updateDebugInfo();
+                renderCategoryButtons(); // Для сайдбара
+                renderCategoriesList();  // Для мобилки
+                renderCategorySelect();  // Для формы
+                if (isAdminLoggedIn) renderAdminCategories();
+            } catch (error) {
+                showErrorMessage('Не удалось загрузить справочник категорий.');
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products`);
+                if (!response.ok) throw new Error();
+                products = await response.json();
+                updateDebugInfo();
+                renderProducts();
+                if (isAdminLoggedIn) renderAdminProducts();
+            } catch (error) {
+                showErrorMessage('Не удалось загрузить базу офферов.');
+            }
+        }
+
+        // РЕНДЕР КАТЕГОРИЙ 
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryContainer');
+            if (!container) return;
+            
+            const allButton = container.querySelector('[data-category="all"]');
+            container.innerHTML = '';
+            container.appendChild(allButton);
+            
+            if (!categories) return;
+            
+            categories.forEach((category) => {
+                const button = document.createElement('button');
+                button.className = `category-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3 transition-colors text-slate-600 hover:bg-slate-100`;
+                button.dataset.category = category.id;
+                button.innerHTML = `<span class="text-lg opacity-70">${category.icon}</span> ${category.name}`;
+                button.addEventListener('click', () => filterByCategory(category.id));
+                container.appendChild(button);
+            });
+            updateActiveCategory();
+        }
+
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
+                        class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${currentCategory === 'all' ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-100'}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg opacity-70">📊</span>
+                        <span>Все предложения</span>
+                    </div>
+                </button>
+            `;
+            
+            if (!categories) return;
+            categories.forEach((category) => {
+                const isActive = currentCategory === category.id;
+                const button = document.createElement('button');
+                button.className = `w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-100'}`;
+                button.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg opacity-70">${category.icon}</span>
+                        <span>${category.name}</span>
+                    </div>
+                `;
+                button.addEventListener('click', () => {
+                    filterByCategory(category.id);
+                    closeModal('categoriesModal');
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Выберите категорию...</option>';
+            if (!categories) return;
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                if (category.id === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function filterByCategory(categoryId) {
+            currentCategory = categoryId;
+            
+            const titleEl = document.getElementById('currentCategoryTitle');
+            if (categoryId === 'all') {
+                titleEl.textContent = 'Все предложения';
+            } else {
+                const cat = categories.find(c => c.id === categoryId);
+                titleEl.textContent = cat ? cat.name : 'Офферы';
+            }
+            
+            updateActiveCategory();
+            renderProducts();
+            renderCategoriesList(); 
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if(btn.dataset.category === currentCategory) {
+                    btn.classList.add('bg-blue-50', 'text-blue-700');
+                    btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+                } else {
+                    btn.classList.remove('bg-blue-50', 'text-blue-700');
+                    btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+                }
+            });
+        }
+
+        function performSearch() {
+            currentSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+            renderProducts();
+        }
+
+        // РЕНДЕР КАРТОЧЕК ПРОДУКТОВ (Увеличены изображения)
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            if (!container) return;
+            
+            let filteredProducts = products.filter(product => {
+                const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
+                const matchesSearch = !currentSearch || 
+                    product.name.toLowerCase().includes(currentSearch) ||
+                    product.bank.toLowerCase().includes(currentSearch);
+                return matchesCategory && matchesSearch && (isAdminLoggedIn ? true : product.active);
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('hidden');
+                return;
+            }
+            
+            noProducts.classList.add('hidden');
+            container.innerHTML = '';
+            
+            filteredProducts.forEach(product => {
+                const category = categories.find(c => c.id === product.category);
+                const productCard = document.createElement('div');
+                
+                productCard.className = 'bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col md:flex-row gap-5 items-start md:items-center cursor-pointer';
+                
+                // ИЗМЕНЕНИЕ: w-20 h-20 md:w-28 md:h-28 для крупного логотипа в строке/карточке
+                productCard.innerHTML = `
+                    <div class="flex items-center gap-4 w-full md:w-2/5">
+                        <div class="w-20 h-20 md:w-28 md:h-28 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2 md:p-3 flex-shrink-0">
+                            ${product.image_url ? `
+                                <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="max-w-full max-h-full object-contain mix-blend-multiply">
+                            ` : `
+                                <span class="text-4xl opacity-50">${category?.icon || '🏦'}</span>
+                            `}
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">${product.bank}</span>
+                                ${isAdminLoggedIn && !product.active ? `<span class="badge-verified bg-red-50 text-red-600 border-red-200">Скрыт</span>` : `<span class="badge-verified hidden md:inline-flex">Лицензия</span>`}
+                            </div>
+                            <h3 class="text-lg md:text-xl font-bold text-slate-900 leading-tight">${product.name}</h3>
+                            <p class="text-sm text-slate-500 mt-1 line-clamp-2 hidden md:block">${product.description}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full md:w-1/4 flex-shrink-0 border-l-4 border-emerald-500 pl-4 py-1">
+                        <p class="text-xs font-medium text-slate-400 mb-1">Главное условие</p>
+                        <p class="text-lg md:text-xl font-bold text-emerald-600 leading-tight">${product.conditions}</p>
+                    </div>
+                    
+                    <div class="w-full md:w-auto md:ml-auto flex-shrink-0 mt-2 md:mt-0">
+                        <button class="apply-btn btn-primary w-full md:w-36 py-3 text-sm shadow-sm">
+                            Оформить
+                        </button>
+                    </div>
+                `;
+                
+                productCard.addEventListener('click', (e) => {
+                    if (e.target.closest('.apply-btn')) {
+                        window.open(product.url, '_blank');
+                    } else {
+                        showProductDetails(product, category);
+                    }
+                });
+                
+                container.appendChild(productCard);
+            });
+        }
+
+        // ДЕТАЛИ ПРОДУКТА (С большим баннером-шапкой)
+        function showProductDetails(product, category) {
+            document.getElementById('productModalBank').textContent = product.bank;
+            
+            // Формируем контент с растянутой шапкой
+            document.getElementById('productModalContent').innerHTML = `
+                
+                <!-- ИЗОБРАЖЕНИЕ-БАННЕР НА ВСЮ ШИРИНУ -->
+                <div class="w-full h-48 sm:h-64 bg-slate-50 border-b border-slate-100 flex items-center justify-center p-6 relative overflow-hidden flex-shrink-0">
+                    ${product.image_url ? `
+                        <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-full object-contain relative z-10 hover:scale-105 transition-transform duration-500 mix-blend-multiply drop-shadow-sm">
+                    ` : `
+                        <span class="text-[100px] opacity-10 absolute">${category?.icon || '🏦'}</span>
+                        <span class="text-6xl relative z-10">${category?.icon || '🏦'}</span>
+                    `}
+                </div>
+
+                <!-- ОСНОВНОЙ КОНТЕНТ (с отступами) -->
+                <div class="p-6 md:p-8 flex flex-col flex-1">
+                    <div class="mb-6">
+                        <div class="badge-verified mb-3">Надежный партнер банка</div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">${product.name}</h2>
+                    </div>
+                    
+                    <div class="bg-emerald-50 rounded-xl p-5 mb-8 border border-emerald-100 shadow-sm">
+                        <p class="text-sm font-medium text-emerald-800 mb-1">Ключевые преимущества</p>
+                        <p class="text-xl md:text-2xl font-bold text-emerald-600">${product.conditions}</p>
+                    </div>
+                    
+                    <div class="mb-8 flex-1">
+                        <h4 class="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Подробные условия
+                        </h4>
+                        <div class="text-sm text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-5 rounded-xl border border-slate-100">
+                            ${product.description}
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 mt-auto">
+                        <button onclick="window.open('${product.url}', '_blank')" class="btn-success w-full py-4 text-base shadow-md">
+                            Оформить заявку онлайн
+                        </button>
+                        <p class="text-center text-xs text-slate-400 mt-3 flex items-center justify-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            Безопасный переход на сайт партнера
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            openModal('productModal');
+        }
+
+        // АВТОРИЗАЦИЯ
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) { showErrorMessage('Пожалуйста, введите пароль.'); return; }
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin@finance.ru');
+                formData.append('password', password);
+                
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    isAdminLoggedIn = true;
+                    closeModal('adminLoginModal');
+                    openModal('adminPanelModal');
+                    await loadProducts();
+                    renderAdminProducts();
+                    renderAdminCategories();
+                } else { showErrorMessage('Неверный пароль. Повторите попытку.'); }
+            } catch (error) { showErrorMessage('Ошибка соединения с сервером.'); }
+        }
+
+        // АДМИНКА: ОФФЕРЫ
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            document.getElementById('productCount').textContent = products.length;
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'bg-white border border-slate-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-blue-300 transition-colors';
+                item.innerHTML = `
+                    <div class="hidden md:flex w-12 justify-center flex-shrink-0">
+                        <span class="w-3 h-3 rounded-full ${product.active ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 md:hidden">
+                            <span class="w-2 h-2 rounded-full ${product.active ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+                            <span class="text-xs font-medium text-slate-500">${product.active ? 'Активен' : 'Скрыт'}</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-900 truncate">${product.name}</h4>
+                        <p class="text-xs text-slate-500">${product.bank}</p>
+                    </div>
+                    <div class="w-full md:w-24 flex md:justify-end flex-shrink-0">
+                        <button onclick="editProduct('${product.id}')" class="w-full md:w-auto px-3 py-1.5 bg-slate-100 text-slate-700 text-sm font-medium rounded hover:bg-slate-200 transition-colors">
+                            Изменить
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            
+            const productId = document.getElementById('productId').value;
+            const isEdit = !!productId;
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('bank', document.getElementById('productBank').value);
+            formData.append('category', document.getElementById('productCategory').value);
+            formData.append('description', document.getElementById('productDescription').value);
+            formData.append('conditions', document.getElementById('productConditions').value);
+            formData.append('url', document.getElementById('productUrl').value);
+            formData.append('active', document.getElementById('productActive').checked);
+            
+            const imageFile = document.getElementById('productImage').files[0];
+            if (imageFile) formData.append('file', imageFile);
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/products/${productId}` : `${window.CONFIG.API_BASE_URL}/products`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка при сохранении данных.');
+            } catch (error) { showErrorMessage('Ошибка соединения с сервером.'); }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Удалить этот оффер? Восстановление невозможно.')) return;
+            try {
+                if (!adminToken) return;
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                }
+            } catch (error) { showErrorMessage('Ошибка при удалении оффера.'); }
+        }
+
+        // АДМИНКА: КАТЕГОРИИ
+        function renderAdminCategories() {
+            const container = document.getElementById('adminCategoriesList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            categories.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'bg-white border border-slate-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-blue-300 transition-colors';
+                item.innerHTML = `
+                    <div class="flex-1 min-w-0 flex items-center gap-4">
+                        <span class="text-2xl w-8 text-center flex-shrink-0">${c.icon}</span>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1 md:hidden">
+                                <span class="text-xs font-medium text-slate-500">ID: ${c.id}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-900 truncate">${c.name}</h4>
+                            <span class="text-xs font-medium ${c.active ? 'text-emerald-500' : 'text-slate-400'}">${c.active ? 'Активна' : 'Скрыта'}</span>
+                        </div>
+                    </div>
+                    <div class="hidden md:block w-32 flex-shrink-0">
+                        <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-1 rounded">${c.id}</span>
+                    </div>
+                    <div class="w-full md:w-24 flex md:justify-end flex-shrink-0">
+                        <button onclick="editCategory('${c.id}')" class="w-full md:w-auto px-3 py-1.5 bg-slate-100 text-slate-700 text-sm font-medium rounded hover:bg-slate-200 transition-colors">
+                            Изменить
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveCategory(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            const id = document.getElementById('categoryId').value;
+            const isEdit = document.getElementById('categoryIsEdit').value === 'true';
+            
+            const payload = {
+                id: id,
+                name: document.getElementById('categoryName').value,
+                icon: document.getElementById('categoryIcon').value,
+                active: document.getElementById('categoryActive').checked
+            };
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/categories/${id}` : `${window.CONFIG.API_BASE_URL}/categories`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка при сохранении категории.');
+            } catch (error) { showErrorMessage('Ошибка соединения с сервером.'); }
+        }
+
+        async function deleteCategory(id) {
+            if(!confirm('Внимание: Удалить можно только пустую категорию. Продолжить?')) return;
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories/${id}`, {
+                    method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if(response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка: В категории еще есть продукты.');
+            } catch (error) { showErrorMessage('Ошибка удаления.'); }
+        }
+
+
+        // УВЕДОМЛЕНИЯ
+        function showErrorMessage(message, isInfo = false) {
+            const errorDiv = document.createElement('div');
+            const bgClass = isInfo ? 'bg-blue-600' : 'bg-red-600';
+            errorDiv.className = `fixed top-20 right-4 ${bgClass} text-white px-5 py-3 rounded-lg shadow-lg z-[100] font-medium text-sm flex items-center gap-3 animate-fade-in`;
+            errorDiv.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                ${message}
+            `;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        // ИНИЦИАЛИЗАЦИЯ И СОБЫТИЯ
+        async function initApp() {
+            const isApiAvailable = await window.CONFIG.checkApiHealth();
+            if (isApiAvailable) {
+                await loadCategories();
+                await loadProducts();
+                bindEvents();
+            } else {
+                showErrorMessage('Система временно недоступна. Пожалуйста, зайдите позже.');
+            }
+        }
+
+        function bindEvents() {
+            document.getElementById('searchInput').addEventListener('input', performSearch);
+            
+            document.getElementById('adminBtn').addEventListener('click', () => {
+                isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+            });
+            
+            // Гамбургер меню для мобилок
+            document.getElementById('menuBtn').addEventListener('click', () => {
+                openModal('categoriesModal');
+            });
+            
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') adminLogin();
+            });
+            
+            // ПРОДУКТЫ (Кнопки)
+            document.getElementById('productForm').addEventListener('submit', saveProduct);
+            document.getElementById('addProductBtn').addEventListener('click', () => {
+                document.getElementById('productFormTitle').textContent = 'Новый оффер';
+                document.getElementById('productForm').reset();
+                document.getElementById('productActive').checked = true;
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('deleteProductBtn').classList.add('hidden');
+                document.getElementById('productId').value = '';
+                renderCategorySelect();
+                closeModal('adminPanelModal');
+                openModal('productFormModal');
+            });
+            document.getElementById('deleteProductBtn').addEventListener('click', () => {
+                const productId = document.getElementById('productId').value;
+                if (productId) deleteProduct(productId);
+            });
+            
+            // КАТЕГОРИИ (Кнопки)
+            document.getElementById('categoryForm').addEventListener('submit', saveCategory);
+            document.getElementById('addCategoryBtn').addEventListener('click', () => {
+                document.getElementById('categoryFormTitle').textContent = 'Новая категория';
+                document.getElementById('categoryForm').reset();
+                document.getElementById('categoryId').readOnly = false;
+                document.getElementById('categoryIsEdit').value = 'false';
+                document.getElementById('categoryActive').checked = true;
+                document.getElementById('deleteCategoryBtn').classList.add('hidden');
+                closeModal('adminPanelModal'); openModal('categoryFormModal');
+            });
+            document.getElementById('deleteCategoryBtn').addEventListener('click', () => {
+                const id = document.getElementById('categoryId').value;
+                if (id) deleteCategory(id);
+            });
+
+            // ЗАГРУЗКА ИЗОБРАЖЕНИЯ
+            document.getElementById('productImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('imagePreview').src = event.target.result;
+                        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                        document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Закрытие по фону
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal.id);
+                });
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal-backdrop:not(.hidden)');
+                    if (openModals.length > 0) closeModal(openModals[openModals.length - 1].id);
+                }
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    document.getElementById('debugPanel').classList.toggle('hidden');
+                }
+            });
+        }
+
+        // Глобальные функции
+        window.closeModal = closeModal;
+        window.filterByCategory = filterByCategory;
+        
+        window.editProduct = (productId) => {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            document.getElementById('productFormTitle').textContent = 'Редактирование оффера';
+            document.getElementById('productId').value = productId;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productBank').value = product.bank;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productConditions').value = product.conditions;
+            document.getElementById('productUrl').value = product.url;
+            document.getElementById('productActive').checked = product.active;
+            
+            if (product.image_url) {
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${product.image_url}`;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+            
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('productFormModal');
+        };
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('categoryFormTitle').textContent = 'Редактирование категории';
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryId').readOnly = true; 
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categoryIcon').value = c.icon;
+            document.getElementById('categoryActive').checked = c.active;
+            document.getElementById('categoryIsEdit').value = 'true';
+            document.getElementById('deleteCategoryBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('categoryFormModal');
+        };
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

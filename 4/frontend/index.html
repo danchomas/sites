@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINANCE LOAN // NEO</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Жирный, геометрический шрифт для Необрутализма -->
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            --bg-color: #FFF4D4; /* Ретро-кремовый */
+            --border-color: #000000;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: #000;
+            background-image: radial-gradient(#000000 1px, transparent 1px);
+            background-size: 24px 24px;
+            background-position: -12px -12px;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        
+        /* Стили Необрутализма */
+        .neo-box {
+            background: #fff;
+            border: 4px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 8px 8px 0px 0px var(--border-color);
+            transition: all 0.15s ease-out;
+        }
+        
+        .neo-button {
+            border: 4px solid var(--border-color);
+            box-shadow: 6px 6px 0px 0px var(--border-color);
+            transition: all 0.1s ease;
+            cursor: pointer;
+        }
+        
+        .neo-button:active {
+            transform: translate(6px, 6px);
+            box-shadow: 0px 0px 0px 0px var(--border-color);
+        }
+
+        .neo-input {
+            border: 4px solid var(--border-color);
+            box-shadow: 4px 4px 0px 0px var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .neo-input:focus {
+            outline: none;
+            box-shadow: 8px 8px 0px 0px #FF00E4; /* Кислотно-розовый при фокусе */
+            transform: translate(-4px, -4px);
+        }
+
+        /* Модальные окна центрированные с анимацией пружины */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background: #fff;
+            border: 4px solid #000;
+            border-radius: 24px;
+            box-shadow: 16px 16px 0px 0px #000;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-enter { animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* Цвета */
+        .color-1 { background-color: #FF90E8; } /* Pink */
+        .color-2 { background-color: #00E5FF; } /* Cyan */
+        .color-3 { background-color: #FFC900; } /* Yellow */
+        .color-4 { background-color: #00D084; } /* Green */
+
+        /* Вкладки админки */
+        .admin-tab { opacity: 0.5; border-bottom: 4px solid transparent; transition: all 0.2s; }
+        .admin-tab.active { opacity: 1; border-bottom-color: #FF00E4; }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body class="min-h-screen pb-24 relative">
+
+    <!-- Debug Panel -->
+    <div id="debugPanel" class="fixed top-24 left-4 bg-white border-4 border-black p-3 rounded-xl shadow-[4px_4px_0_0_#000] text-xs z-[100] font-bold">
+        <div class="mb-2 bg-black text-white px-2 py-1 uppercase inline-block -skew-x-6">SYS.DEBUG</div>
+        <div>API: <span id="debugApiUrl" class="text-blue-600">-</span></div>
+        <div>Cats: <span id="debugCategoriesCount" class="text-pink-600">0</span></div>
+        <div>Items: <span id="debugProductsCount" class="text-green-600">0</span></div>
+    </div>
+
+    <!-- Floating Nav -->
+    <nav class="fixed top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-white border-4 border-black rounded-full px-6 py-3 flex justify-between items-center z-40 shadow-[8px_8px_0_0_#000]">
+        <button onclick="window.location.reload()" class="font-black text-2xl tracking-tighter uppercase flex items-center hover:scale-105 transition-transform">
+            <span class="bg-[#00E5FF] px-2 py-1 rounded-lg border-2 border-black mr-2 skew-x-[-10deg]">F-</span>LOAN
+        </button>
+        <button id="menuBtn" class="bg-[#FF90E8] neo-button rounded-full px-5 py-2 font-bold uppercase text-sm flex items-center gap-2">
+            <span>Навигация</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+        </button>
+    </nav>
+
+    <!-- HERO & SEARCH -->
+    <header class="pt-36 px-6 max-w-6xl mx-auto flex flex-col items-center text-center">
+        <h1 class="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none mb-6">
+            Бери <span class="bg-[#FFC900] px-2 border-4 border-black inline-block rotate-2">бабки.</span>
+        </h1>
+        <p class="text-xl md:text-2xl font-bold mb-10 max-w-2xl bg-white border-4 border-black px-6 py-3 rounded-2xl shadow-[6px_6px_0_0_#000] -rotate-1">
+            Сравнивай лучшие предложения банков в одном месте
+        </p>
+
+        <!-- Search Bar -->
+        <div class="w-full max-w-2xl relative group">
+            <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none z-10">
+                <span class="text-3xl">🔍</span>
+            </div>
+            <input type="text" id="searchInput" placeholder="Найти банк или продукт..."
+                class="w-full pl-16 pr-6 py-6 bg-white rounded-3xl text-2xl font-bold placeholder-gray-400 neo-input text-black">
+        </div>
+    </header>
+
+    <!-- HORIZONTAL CATEGORIES (Скроллинг) -->
+    <div class="mt-16 max-w-6xl mx-auto overflow-hidden">
+        <div class="flex space-x-4 overflow-x-auto no-scrollbar px-6 py-4" id="categoryContainer">
+            <button class="category-btn neo-button flex-shrink-0 px-8 py-4 bg-white rounded-2xl font-black text-xl whitespace-nowrap uppercase" data-category="all">
+                ВСЕ ОФФЕРЫ
+            </button>
+        </div>
+    </div>
+
+    <!-- PRODUCTS GRID (Сетка) -->
+    <main class="px-6 py-10 max-w-6xl mx-auto relative z-10">
+        <div id="productsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Карточки через JS -->
+        </div>
+        
+        <div id="noProducts" class="hidden text-center py-20 w-full col-span-full">
+            <div class="neo-box inline-block p-12 bg-white rotate-1">
+                <div class="text-6xl mb-4">🤷‍♂️</div>
+                <h3 class="text-3xl font-black uppercase mb-2">Нет предложений</h3>
+                <p class="font-bold text-gray-500">Ничего не найдено по вашему запросу</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ADMIN FLOATING BUTTON -->
+    <button id="adminBtn" class="fixed bottom-6 right-6 w-16 h-16 bg-[#000] text-white neo-button rounded-full flex items-center justify-center z-40 hover:bg-[#FF00E4] transition-colors" title="Панель администратора">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </button>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- CATEGORIES MODAL -->
+    <div id="categoriesModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 bg-[#FFF4D4]">
+            <div class="flex justify-between items-center mb-8 border-b-4 border-black pb-4">
+                <h3 class="text-4xl font-black uppercase">Каталог</h3>
+                <button onclick="closeModal('categoriesModal')" class="w-12 h-12 bg-white neo-button rounded-full flex items-center justify-center text-black">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="space-y-4" id="categoriesList">
+                <!-- Категории через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCT DETAILS MODAL (Обновлен дизайн шапки с изображением) -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col p-0">
+            <!-- Верхняя плашка (Sticky) -->
+            <div class="bg-[#00E5FF] p-4 sm:p-6 border-b-4 border-black flex justify-between items-start sticky top-0 z-30" id="productModalHeader">
+                <div class="pr-4">
+                    <span class="bg-black text-white px-2 py-1 rounded text-xs font-bold uppercase tracking-wider mb-2 inline-block" id="productModalBank"></span>
+                    <h3 class="text-2xl sm:text-3xl font-black leading-tight uppercase" id="productModalTitle"></h3>
+                </div>
+                <button onclick="closeModal('productModal')" class="w-10 h-10 bg-white neo-button rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="bg-white flex-grow flex flex-col" id="productModalContent">
+                <!-- Контент детализации с большим баннером -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN LOGIN MODAL -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 bg-[#FF90E8]">
+            <button onclick="closeModal('adminLoginModal')" class="absolute top-4 right-4 w-10 h-10 bg-white neo-button rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            
+            <div class="text-center mb-8">
+                <div class="inline-block bg-black text-white px-4 py-2 font-black text-2xl uppercase skew-y-[-2deg] mb-4 border-4 border-white">
+                    Панель управления
+                </div>
+                <h3 class="text-4xl font-black uppercase mt-2">Авторизация</h3>
+            </div>
+            
+            <div class="space-y-6">
+                <div>
+                    <input type="password" id="adminPassword" 
+                           class="w-full px-6 py-4 text-2xl font-bold neo-input rounded-2xl bg-white text-center tracking-[0.5em]"
+                           placeholder="••••••••">
+                </div>
+                <button id="loginBtn" class="w-full bg-[#FFC900] text-black py-5 rounded-2xl font-black text-2xl uppercase neo-button">
+                    Войти
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL MODAL (С ВКЛАДКАМИ) -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col max-w-4xl h-[90vh]">
+            <div class="bg-black text-white p-6 border-b-4 border-black flex flex-col sm:flex-row items-start sm:items-center justify-between sticky top-0 z-10 gap-4">
+                
+                <div class="flex items-center gap-6">
+                    <button id="tabBtnProducts" onclick="switchAdminTab('products')" class="admin-tab active text-2xl font-black uppercase pb-1">
+                        Офферы <span class="text-sm bg-[#00E5FF] text-black px-2 py-0.5 rounded-full ml-1" id="productCount">0</span>
+                    </button>
+                    <button id="tabBtnCategories" onclick="switchAdminTab('categories')" class="admin-tab text-2xl font-black uppercase pb-1">
+                        Разделы
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-4 w-full sm:w-auto justify-between">
+                    <button onclick="logoutAdmin()" class="text-[#FF5252] font-black uppercase text-sm border-b-2 border-transparent hover:border-[#FF5252] transition-all">
+                        Выход
+                    </button>
+                    <button onclick="closeModal('adminPanelModal')" class="text-white hover:text-[#FF90E8]">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 bg-[#FFF4D4] flex-grow overflow-y-auto">
+                
+                <!-- Вкладка ОФФЕРЫ -->
+                <div id="adminTabProducts">
+                    <button id="addProductBtn" class="w-full bg-[#00D084] text-black py-6 rounded-2xl font-black text-xl uppercase neo-button mb-8 flex items-center justify-center gap-3">
+                        <span class="text-3xl">+</span> Добавить оффер
+                    </button>
+                    <div class="space-y-4" id="adminProductsList"></div>
+                </div>
+
+                <!-- Вкладка КАТЕГОРИИ -->
+                <div id="adminTabCategories" class="hidden">
+                    <button id="addCategoryBtn" class="w-full bg-[#FF90E8] text-black py-6 rounded-2xl font-black text-xl uppercase neo-button mb-8 flex items-center justify-center gap-3">
+                        <span class="text-3xl">+</span> Добавить раздел
+                    </button>
+                    <div class="space-y-4" id="adminCategoriesList"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCT FORM MODAL -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col max-w-2xl h-[90vh]">
+            <div class="bg-[#FFC900] p-6 border-b-4 border-black flex justify-between items-center sticky top-0 z-20">
+                <h3 class="text-2xl font-black uppercase" id="productFormTitle">Редактирование</h3>
+                <button onclick="closeModal('productFormModal')" class="w-10 h-10 bg-white neo-button rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 bg-white overflow-y-auto flex-grow">
+                <form id="productForm" class="space-y-6">
+                    <input type="hidden" id="productId">
+                    
+                    <div>
+                        <label class="block font-black uppercase mb-2 ml-2">Название</label>
+                        <input type="text" id="productName" required class="w-full px-4 py-3 neo-input rounded-xl font-bold text-lg bg-[#F8F8F8]">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block font-black uppercase mb-2 ml-2">Эмитент / Банк</label>
+                            <input type="text" id="productBank" required class="w-full px-4 py-3 neo-input rounded-xl font-bold text-lg bg-[#F8F8F8]">
+                        </div>
+                        
+                        <div class="select-wrapper relative">
+                            <label class="block font-black uppercase mb-2 ml-2">Категория</label>
+                            <select id="productCategory" required class="w-full px-4 py-3 neo-input rounded-xl font-bold text-lg bg-[#F8F8F8] appearance-none cursor-pointer">
+                                <option value="">Выбрать...</option>
+                            </select>
+                            <div class="pointer-events-none absolute bottom-4 right-4 font-black">▼</div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative bg-[#FFF4D4] border-4 border-black border-dashed rounded-2xl p-6 text-center hover:bg-[#FF90E8] transition-colors cursor-pointer group">
+                        <label class="block font-black uppercase mb-2 cursor-pointer">Логотип / Изображение</label>
+                        <input type="file" id="productImage" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div id="uploadPlaceholder" class="text-xl font-bold mt-2">
+                            Нажмите или перетащите файл
+                        </div>
+                        <div id="imagePreviewContainer" class="mt-4 hidden bg-white border-4 border-black p-2 rounded-xl inline-block relative z-0">
+                            <img id="imagePreview" class="h-24 mx-auto object-contain">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block font-black uppercase mb-2 ml-2">Описание</label>
+                        <textarea id="productDescription" rows="3" required class="w-full px-4 py-3 neo-input rounded-xl font-bold bg-[#F8F8F8] resize-none"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block font-black uppercase mb-2 ml-2 text-[#FF00E4]">Ключевые условия</label>
+                        <input type="text" id="productConditions" required placeholder="Напр. Ставка 0%" class="w-full px-4 py-3 neo-input rounded-xl font-black text-xl bg-[#00E5FF]">
+                    </div>
+                    
+                    <div>
+                        <label class="block font-black uppercase mb-2 ml-2">Партнерская ссылка</label>
+                        <input type="url" id="productUrl" required class="w-full px-4 py-3 neo-input rounded-xl font-bold bg-[#F8F8F8]" placeholder="https://...">
+                    </div>
+                    
+                    <div class="flex items-center p-4 border-4 border-black rounded-xl bg-white">
+                        <input type="checkbox" id="productActive" class="w-6 h-6 border-4 border-black rounded accent-black" checked>
+                        <label class="ml-4 font-black uppercase text-lg">Активно (Публикация)</label>
+                    </div>
+                    
+                    <div class="flex gap-4 pt-6">
+                        <button type="button" id="deleteProductBtn" class="w-1/3 bg-[#FF5252] text-white border-4 border-black py-4 rounded-xl font-black uppercase hover:translate-y-1 transition-transform hidden">
+                            Удалить
+                        </button>
+                        <button type="submit" class="flex-1 bg-[#000] text-white py-4 rounded-xl font-black text-xl uppercase neo-button">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CATEGORY FORM MODAL -->
+    <div id="categoryFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter flex flex-col max-w-2xl h-[80vh]">
+            <div class="bg-[#FF90E8] p-6 border-b-4 border-black flex justify-between items-center sticky top-0 z-20">
+                <h3 class="text-2xl font-black uppercase" id="categoryFormTitle">Управление разделом</h3>
+                <button onclick="closeModal('categoryFormModal')" class="w-10 h-10 bg-white neo-button rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 bg-white overflow-y-auto flex-grow">
+                <form id="categoryForm" class="space-y-6">
+                    <input type="hidden" id="categoryIsEdit" value="false">
+                    
+                    <div>
+                        <label class="block font-black uppercase mb-2 ml-2">Системный ID</label>
+                        <input type="text" id="categoryId" required placeholder="напр. auto-loans" class="w-full px-4 py-3 neo-input rounded-xl font-bold text-lg bg-[#F8F8F8]">
+                        <p class="text-sm font-bold text-gray-500 mt-2 ml-2">Идентификатор. Нельзя изменить после создания.</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block font-black uppercase mb-2 ml-2">Название раздела</label>
+                        <input type="text" id="categoryName" required placeholder="напр. Автокредиты" class="w-full px-4 py-3 neo-input rounded-xl font-bold text-lg bg-[#F8F8F8]">
+                    </div>
+                    
+                    <div>
+                        <label class="block font-black uppercase mb-2 ml-2">Иконка (Эмодзи)</label>
+                        <input type="text" id="categoryIcon" required placeholder="🚗" class="w-full px-4 py-3 neo-input rounded-xl font-black text-2xl bg-[#FFF4D4] text-center max-w-[120px]">
+                    </div>
+                    
+                    <div class="flex items-center p-4 border-4 border-black rounded-xl bg-white mt-6">
+                        <input type="checkbox" id="categoryActive" class="w-6 h-6 border-4 border-black rounded accent-black" checked>
+                        <label class="ml-4 font-black uppercase text-lg">Раздел активен</label>
+                    </div>
+                    
+                    <div class="flex gap-4 pt-6">
+                        <button type="button" id="deleteCategoryBtn" class="w-1/3 bg-[#FF5252] text-white border-4 border-black py-4 rounded-xl font-black uppercase hover:translate-y-1 transition-transform hidden">
+                            Удалить
+                        </button>
+                        <button type="submit" class="flex-1 bg-[#000] text-white py-4 rounded-xl font-black text-xl uppercase neo-button">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- КОНФИГ -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'finance-loan',
+            VERSION: '5.2.0', // Neo-Pop Edition + Categories + Full Header Image
+            checkApiHealth: async function() {
+                try {
+                    const response = await fetch(`${this.API_BASE_URL}/health`, { headers: { 'Accept': 'application/json' } });
+                    return response.ok;
+                } catch (error) { return false; }
+            }
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <!-- ОСНОВНОЙ СКРИПТ -->
+    <script>
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+        let scrollPosition = 0;
+
+        // Палитра для карточек 
+        const colors = ['bg-[#FF90E8]', 'bg-[#00E5FF]', 'bg-[#FFC900]', 'bg-[#00D084]', 'bg-[#FFF4D4]'];
+
+        function lockScroll() {
+            scrollPosition = window.pageYOffset;
+            document.body.classList.add('body-no-scroll');
+            document.body.style.top = `-${scrollPosition}px`;
+        }
+
+        function unlockScroll() {
+            document.body.classList.remove('body-no-scroll');
+            document.body.style.top = '';
+            window.scrollTo(0, scrollPosition);
+        }
+
+        function openModal(modalId) {
+            lockScroll();
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            unlockScroll();
+        }
+
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-[#FF5252] text-white px-8 py-4 z-[100] font-black uppercase text-xl border-4 border-black shadow-[8px_8px_0_0_#000] rotate-2 rounded-xl text-center min-w-[300px]';
+            errorDiv.innerHTML = message;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+            document.getElementById('debugCategoriesCount').textContent = categories ? categories.length : 0;
+            document.getElementById('debugProductsCount').textContent = products ? products.length : 0;
+        }
+
+        window.logoutAdmin = function() {
+            localStorage.removeItem('adminToken');
+            adminToken = null;
+            isAdminLoggedIn = false;
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+            unlockScroll();
+            showErrorMessage('Сессия завершена');
+            loadProducts();
+        }
+
+        window.switchAdminTab = (tab) => {
+            document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+            document.getElementById('tabBtnCategories').classList.toggle('active', tab === 'categories');
+            document.getElementById('adminTabProducts').classList.toggle('hidden', tab !== 'products');
+            document.getElementById('adminTabCategories').classList.toggle('hidden', tab !== 'categories');
+        };
+
+        // Загрузка данных
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories`);
+                if (!response.ok) throw new Error();
+                categories = await response.json();
+                updateDebugInfo();
+                renderCategoryButtons();
+                renderCategoriesList();
+                renderCategorySelect();
+                if (isAdminLoggedIn) renderAdminCategories();
+            } catch (error) { showErrorMessage('Ошибка получения категорий'); }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products`);
+                if (!response.ok) throw new Error();
+                products = await response.json();
+                updateDebugInfo();
+                renderProducts();
+                if (isAdminLoggedIn) renderAdminProducts();
+            } catch (error) { showErrorMessage('Ошибка получения офферов'); }
+        }
+
+        // КНОПКИ КАТЕГОРИЙ 
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryContainer');
+            if (!container) return;
+            
+            const allButton = container.querySelector('[data-category="all"]');
+            container.innerHTML = '';
+            container.appendChild(allButton);
+            
+            if (!categories) return;
+            
+            categories.forEach((category, i) => {
+                const bgClass = colors[i % (colors.length - 1)]; 
+                const button = document.createElement('button');
+                button.className = `category-btn neo-button flex-shrink-0 px-8 py-4 ${bgClass} rounded-2xl font-black text-xl whitespace-nowrap uppercase`;
+                button.dataset.category = category.id;
+                button.innerHTML = `<span class="mr-2 text-2xl">${category.icon}</span> ${category.name}`;
+                button.addEventListener('click', () => filterByCategory(category.id));
+                container.appendChild(button);
+            });
+            updateActiveCategory();
+        }
+
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
+                        class="w-full text-left p-6 neo-button rounded-2xl flex items-center bg-white mb-4">
+                    <span class="text-4xl mr-6 border-4 border-black rounded-full w-16 h-16 flex items-center justify-center bg-black text-white flex-shrink-0">🔥</span>
+                    <span class="text-3xl font-black uppercase">Все офферы</span>
+                </button>
+            `;
+            
+            if (!categories) return;
+            categories.forEach((category, i) => {
+                const bgClass = colors[i % (colors.length - 1)];
+                const button = document.createElement('button');
+                button.className = `w-full text-left p-6 neo-button rounded-2xl flex items-center ${bgClass} mb-4`;
+                button.innerHTML = `
+                    <span class="text-4xl mr-6 border-4 border-black bg-white rounded-full w-16 h-16 flex items-center justify-center flex-shrink-0">${category.icon}</span>
+                    <span class="text-3xl font-black uppercase">${category.name}</span>
+                `;
+                button.addEventListener('click', () => {
+                    filterByCategory(category.id);
+                    closeModal('categoriesModal');
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Выбрать...</option>';
+            if (!categories) return;
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = `${category.icon} ${category.name}`;
+                if (category.id === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function filterByCategory(categoryId) {
+            currentCategory = categoryId;
+            updateActiveCategory();
+            renderProducts();
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                const isActive = btn.dataset.category === currentCategory;
+                if(isActive) {
+                    btn.classList.add('translate-y-2', 'shadow-none');
+                    btn.style.boxShadow = '0 0 0 0 #000';
+                    btn.classList.add('border-b-8'); 
+                } else {
+                    btn.classList.remove('translate-y-2', 'shadow-none', 'border-b-8');
+                    btn.style.boxShadow = ''; 
+                }
+            });
+        }
+
+        function performSearch() {
+            currentSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+            renderProducts();
+        }
+
+        // РЕНДЕР КАРТОЧЕК
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            if (!container) return;
+            
+            let filteredProducts = products.filter(product => {
+                const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
+                const matchesSearch = !currentSearch || 
+                    product.name.toLowerCase().includes(currentSearch) ||
+                    product.bank.toLowerCase().includes(currentSearch);
+                return matchesCategory && matchesSearch && (isAdminLoggedIn ? true : product.active);
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('hidden');
+                return;
+            }
+            
+            noProducts.classList.add('hidden');
+            container.innerHTML = '';
+            
+            filteredProducts.forEach((product, i) => {
+                const category = categories.find(c => c.id === product.category);
+                const productCard = document.createElement('div');
+                const accentColor = colors[i % colors.length]; 
+                
+                productCard.className = 'neo-box bg-white flex flex-col relative group h-full cursor-pointer hover:-translate-y-2 hover:shadow-[12px_12px_0_0_#000]';
+                
+                productCard.innerHTML = `
+                    <div class="${accentColor} p-4 border-b-4 border-black rounded-t-[12px] flex justify-between items-start">
+                        <div class="flex flex-col gap-2">
+                            <span class="bg-black text-white text-[10px] font-black px-2 py-1 uppercase rounded tracking-widest inline-block w-fit">${product.bank}</span>
+                            ${isAdminLoggedIn && !product.active ? `<span class="bg-[#FF5252] text-white text-[10px] font-black px-2 py-1 uppercase rounded tracking-widest inline-block w-fit border-2 border-black">Скрыто</span>` : ''}
+                        </div>
+                        ${product.image_url ? `
+                            <div class="w-20 h-20 sm:w-24 sm:h-24 bg-white border-4 border-black rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden p-2">
+                                <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-full object-contain drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">
+                            </div>
+                        ` : `
+                            <div class="w-20 h-20 sm:w-24 sm:h-24 bg-white border-4 border-black rounded-full flex items-center justify-center text-4xl flex-shrink-0">
+                                ${category?.icon || '💰'}
+                            </div>
+                        `}
+                    </div>
+                    
+                    <div class="p-5 flex-grow flex flex-col">
+                        <h3 class="font-black text-2xl leading-tight uppercase mb-2">${product.name}</h3>
+                        <p class="font-bold text-sm text-gray-600 mb-6 line-clamp-2">${product.description}</p>
+                        
+                        <div class="mt-auto bg-[#F0F0F0] border-2 border-black border-dashed rounded-lg p-3 mb-5 rotate-1 group-hover:rotate-0 transition-transform">
+                            <p class="font-black text-center text-lg uppercase">${product.conditions}</p>
+                        </div>
+                        
+                        <button class="apply-btn w-full py-4 bg-black text-white font-black uppercase text-lg rounded-xl neo-button">
+                            Получить
+                        </button>
+                    </div>
+                `;
+                
+                productCard.addEventListener('click', (e) => {
+                    if (e.target.closest('.apply-btn')) {
+                        window.open(product.url, '_blank');
+                    } else {
+                        showProductDetails(product, accentColor);
+                    }
+                });
+                
+                container.appendChild(productCard);
+            });
+        }
+
+        // ДЕТАЛИ ПРОДУКТА (Изображение на всю шапку)
+        function showProductDetails(product, accentColor = 'bg-[#00E5FF]') {
+            const category = categories.find(c => c.id === product.category);
+            
+            // Окрашиваем плашку
+            const header = document.getElementById('productModalHeader');
+            if(header) {
+                header.className = `${accentColor} p-4 sm:p-6 border-b-4 border-black flex justify-between items-start sticky top-0 z-30`;
+            }
+
+            document.getElementById('productModalBank').textContent = product.bank;
+            document.getElementById('productModalTitle').textContent = product.name;
+            
+            // Баннер (шапка) + основной контент
+            document.getElementById('productModalContent').innerHTML = `
+                <!-- ИЗОБРАЖЕНИЕ НА ВСЮ ШИРИНУ -->
+                ${product.image_url ? `
+                    <div class="w-full h-56 md:h-80 border-b-4 border-black bg-white flex items-center justify-center p-8 overflow-hidden relative">
+                        <!-- Ретро-точки на фоне (цвет зависит от категории) -->
+                        <div class="absolute inset-0 opacity-20 ${accentColor}" style="background-image: radial-gradient(#000 2px, transparent 2px); background-size: 16px 16px;"></div>
+                        <!-- Само лого -->
+                        <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-full object-contain relative z-10 drop-shadow-[6px_6px_0_rgba(0,0,0,1)] hover:scale-105 transition-transform duration-300">
+                    </div>
+                ` : `
+                    <div class="w-full h-56 md:h-80 border-b-4 border-black flex items-center justify-center ${accentColor} overflow-hidden">
+                        <span class="text-[120px] md:text-[160px] opacity-40 mix-blend-overlay">${category?.icon || '💰'}</span>
+                    </div>
+                `}
+                
+                <!-- КОНТЕНТ ПОД БАННЕРОМ -->
+                <div class="p-6 md:p-8 flex flex-col items-center text-center">
+                    <div class="bg-black text-white px-6 py-5 rounded-xl border-4 border-black w-full shadow-[6px_6px_0_0_#FF00E4] rotate-1 mb-8">
+                        <p class="text-xs text-gray-400 uppercase font-bold mb-2">Главное</p>
+                        <p class="font-black text-2xl md:text-3xl">${product.conditions}</p>
+                    </div>
+                    
+                    <div class="text-left w-full border-4 border-black p-6 rounded-2xl bg-[#F8F8F8] mb-8">
+                        <p class="font-black uppercase mb-4 text-xl border-b-4 border-black pb-2 inline-block">Детали</p>
+                        <p class="font-bold text-lg leading-relaxed whitespace-pre-line text-gray-800">${product.description}</p>
+                    </div>
+                    
+                    <button onclick="window.open('${product.url}', '_blank')"
+                            class="w-full bg-[#00D084] text-black py-6 rounded-2xl font-black text-2xl uppercase neo-button shadow-[8px_8px_0_0_#000]">
+                        Перейти на сайт
+                    </button>
+                </div>
+            `;
+            
+            openModal('productModal');
+        }
+
+        // АВТОРИЗАЦИЯ
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) { showErrorMessage('Введите пароль'); return; }
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin@finance.ru');
+                formData.append('password', password);
+                
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    isAdminLoggedIn = true;
+                    closeModal('adminLoginModal');
+                    openModal('adminPanelModal');
+                    await loadProducts();
+                    renderAdminProducts();
+                    renderAdminCategories();
+                } else { showErrorMessage('Доступ отклонен'); }
+            } catch (error) { showErrorMessage('Ошибка сети'); }
+        }
+
+        // АДМИНКА: ОФФЕРЫ
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            document.getElementById('productCount').textContent = products.length;
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'bg-white border-4 border-black p-4 rounded-xl shadow-[4px_4px_0_0_#000] flex justify-between items-center';
+                item.innerHTML = `
+                    <div class="flex-1 pr-4">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-4 h-4 border-2 border-black rounded-full flex-shrink-0 ${product.active ? 'bg-[#00D084]' : 'bg-[#FF5252]'}"></div>
+                            <h4 class="font-black text-lg uppercase leading-none truncate">${product.name}</h4>
+                        </div>
+                        <p class="font-bold text-sm text-gray-500 ml-6 uppercase">${product.bank}</p>
+                    </div>
+                    <button onclick="editProduct('${product.id}')" class="bg-[#FFC900] p-3 border-4 border-black rounded-xl neo-button font-black uppercase flex-shrink-0">
+                        Ред
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            const productId = document.getElementById('productId').value;
+            const isEdit = !!productId;
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('bank', document.getElementById('productBank').value);
+            formData.append('category', document.getElementById('productCategory').value);
+            formData.append('description', document.getElementById('productDescription').value);
+            formData.append('conditions', document.getElementById('productConditions').value);
+            formData.append('url', document.getElementById('productUrl').value);
+            formData.append('active', document.getElementById('productActive').checked);
+            
+            const imageFile = document.getElementById('productImage').files[0];
+            if (imageFile) formData.append('file', imageFile);
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/products/${productId}` : `${window.CONFIG.API_BASE_URL}/products`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                    body: formData
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка сохранения');
+            } catch (error) { showErrorMessage('Ошибка сети'); }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Удалить запись безвозвратно?')) return;
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products/${productId}`, {
+                    method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                }
+            } catch (error) { showErrorMessage('Ошибка удаления'); }
+        }
+
+        // АДМИНКА: КАТЕГОРИИ
+        function renderAdminCategories() {
+            const container = document.getElementById('adminCategoriesList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            categories.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'bg-white border-4 border-black p-4 rounded-xl shadow-[4px_4px_0_0_#000] flex justify-between items-center mb-4';
+                item.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-4xl w-12 text-center flex-shrink-0">${c.icon}</span>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="w-4 h-4 border-2 border-black rounded-full flex-shrink-0 ${c.active ? 'bg-[#00D084]' : 'bg-[#FF5252]'}"></div>
+                                <span class="text-xs font-bold text-gray-500 uppercase">ID: ${c.id}</span>
+                            </div>
+                            <h4 class="font-black text-xl uppercase leading-none">${c.name}</h4>
+                        </div>
+                    </div>
+                    <button onclick="editCategory('${c.id}')" class="bg-[#FF90E8] p-3 border-4 border-black rounded-xl neo-button font-black uppercase flex-shrink-0">
+                        Ред
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveCategory(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            const id = document.getElementById('categoryId').value;
+            const isEdit = document.getElementById('categoryIsEdit').value === 'true';
+            
+            const payload = {
+                id: id,
+                name: document.getElementById('categoryName').value,
+                icon: document.getElementById('categoryIcon').value,
+                active: document.getElementById('categoryActive').checked
+            };
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/categories/${id}` : `${window.CONFIG.API_BASE_URL}/categories`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка сохранения раздела');
+            } catch (error) { showErrorMessage('Ошибка сети'); }
+        }
+
+        async function deleteCategory(id) {
+            if(!confirm('Раздел должен быть пуст. Удалить?')) return;
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories/${id}`, {
+                    method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if(response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка: Раздел не пуст');
+            } catch (error) { showErrorMessage('Ошибка удаления'); }
+        }
+
+
+        // ИНИЦИАЛИЗАЦИЯ
+        async function initApp() {
+            const isApiAvailable = await window.CONFIG.checkApiHealth();
+            if (isApiAvailable) {
+                await loadCategories();
+                await loadProducts();
+                bindEvents();
+            } else {
+                showErrorMessage('Отсутствует связь с сервером');
+            }
+        }
+
+        function bindEvents() {
+            document.getElementById('searchInput').addEventListener('input', performSearch);
+            
+            document.getElementById('adminBtn').addEventListener('click', () => {
+                isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+            });
+            document.getElementById('menuBtn').addEventListener('click', () => {
+                renderCategoriesList(); openModal('categoriesModal');
+            });
+            
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') adminLogin();
+            });
+            
+            // ПРОДУКТЫ (Форма)
+            document.getElementById('productForm').addEventListener('submit', saveProduct);
+            document.getElementById('addProductBtn').addEventListener('click', () => {
+                document.getElementById('productFormTitle').textContent = 'Новый оффер';
+                document.getElementById('productForm').reset();
+                document.getElementById('productActive').checked = true;
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('deleteProductBtn').classList.add('hidden');
+                document.getElementById('productId').value = '';
+                renderCategorySelect();
+                closeModal('adminPanelModal'); openModal('productFormModal');
+            });
+            document.getElementById('deleteProductBtn').addEventListener('click', () => {
+                const productId = document.getElementById('productId').value;
+                if (productId) deleteProduct(productId);
+            });
+            
+            // КАТЕГОРИИ (Форма)
+            document.getElementById('categoryForm').addEventListener('submit', saveCategory);
+            document.getElementById('addCategoryBtn').addEventListener('click', () => {
+                document.getElementById('categoryFormTitle').textContent = 'Новый раздел';
+                document.getElementById('categoryForm').reset();
+                document.getElementById('categoryId').readOnly = false;
+                document.getElementById('categoryIsEdit').value = 'false';
+                document.getElementById('categoryActive').checked = true;
+                document.getElementById('deleteCategoryBtn').classList.add('hidden');
+                closeModal('adminPanelModal'); openModal('categoryFormModal');
+            });
+            document.getElementById('deleteCategoryBtn').addEventListener('click', () => {
+                const id = document.getElementById('categoryId').value;
+                if (id) deleteCategory(id);
+            });
+
+            // Загрузка фото
+            document.getElementById('productImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('imagePreview').src = event.target.result;
+                        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                        document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // ESC + Клик вне
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal.id);
+                });
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal-backdrop:not(.hidden)');
+                    if (openModals.length > 0) closeModal(openModals[openModals.length - 1].id);
+                }
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    document.getElementById('debugPanel').classList.toggle('hidden');
+                }
+            });
+        }
+
+        // Глобальные функции
+        window.closeModal = closeModal;
+        window.filterByCategory = filterByCategory;
+        
+        window.editProduct = (productId) => {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            document.getElementById('productFormTitle').textContent = 'Редактирование';
+            document.getElementById('productId').value = productId;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productBank').value = product.bank;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productConditions').value = product.conditions;
+            document.getElementById('productUrl').value = product.url;
+            document.getElementById('productActive').checked = product.active;
+            
+            if (product.image_url) {
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${product.image_url}`;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+            
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('productFormModal');
+        };
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('categoryFormTitle').textContent = 'Редактирование';
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryId').readOnly = true; 
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categoryIcon').value = c.icon;
+            document.getElementById('categoryActive').checked = c.active;
+            document.getElementById('categoryIsEdit').value = 'true';
+            document.getElementById('deleteCategoryBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('categoryFormModal');
+        };
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

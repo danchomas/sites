@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансы | Playful Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Добрый, пухлый шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            font-family: 'Quicksand', sans-serif;
+            --bg-color: #E0F2FE; /* Sky 100 */
+            --text-color: #334155; /* Slate 700 */
+            --shadow-color: #CBD5E1; /* Slate 300 */
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 20px 20px, #BAE6FD 2px, transparent 0);
+            background-size: 40px 40px;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+
+        /* Игровые "Пластиковые" Карточки */
+        .clay-card {
+            background-color: #ffffff;
+            border-radius: 28px;
+            border: 3px solid #F1F5F9;
+            box-shadow: 0 10px 0px rgba(203, 213, 225, 0.5);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .clay-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 0px rgba(203, 213, 225, 0.5);
+            border-color: #E2E8F0;
+        }
+
+        /* 3D Кнопки */
+        .clay-btn {
+            background-color: #3B82F6;
+            color: #ffffff;
+            font-weight: 900;
+            border-radius: 20px;
+            border: 2px solid #2563EB;
+            border-bottom-width: 6px;
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            cursor: pointer;
+        }
+        .clay-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+            margin-bottom: 4px;
+        }
+        
+        .clay-btn-green { background-color: #10B981; border-color: #059669; }
+        .clay-btn-red { background-color: #EF4444; border-color: #DC2626; }
+        .clay-btn-white { background-color: #ffffff; color: #475569; border-color: #CBD5E1; }
+
+        /* Категории (Таблетки) */
+        .pill-btn {
+            background-color: #ffffff;
+            color: #64748B;
+            font-weight: 900;
+            border-radius: 9999px;
+            border: 2px solid #E2E8F0;
+            border-bottom-width: 6px;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            padding: 12px 24px;
+        }
+        .pill-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+        }
+        .pill-btn.active {
+            background-color: #3B82F6;
+            color: #ffffff;
+            border-color: #2563EB;
+            border-bottom-width: 2px;
+            transform: translateY(4px);
+        }
+
+        /* Пухлые инпуты */
+        .clay-input {
+            width: 100%;
+            background-color: #F1F5F9;
+            border: 3px solid #E2E8F0;
+            border-radius: 20px;
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #334155;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .clay-input:focus {
+            background-color: #ffffff;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+        .clay-input::placeholder { color: #94A3B8; font-weight: 700; }
+
+        /* Модальные окна с пружинным эффектом */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        .modal-content {
+            background: #ffffff;
+            border-radius: 36px;
+            width: 100%; max-width: 550px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 4px solid #F8FAFC;
+            box-shadow: 0 20px 0px rgba(15, 23, 42, 0.1);
+        }
+        
+        .modal-enter { animation: popBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes popBounce {
+            0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* Чекбоксы */
+        input[type="checkbox"] {
+            appearance: none; width: 32px; height: 32px;
+            background: #F1F5F9; border: 3px solid #CBD5E1; border-radius: 10px;
+            cursor: pointer; position: relative; transition: all 0.2s;
+        }
+        input[type="checkbox"]:checked {
+            background: #10B981; border-color: #059669;
+        }
+        input[type="checkbox"]:checked::after {
+            content: "✓"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-weight: 900; font-size: 18px;
+        }
+
+        .select-wrapper { position: relative; }
+        .select-wrapper select { appearance: none; cursor: pointer; }
+        .select-wrapper::after { content: "▼"; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #94A3B8; pointer-events: none; font-weight: 900; }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Debug (Стиль консоли разработчика игры) -->
+    <div id="debugPanel" class="fixed top-24 left-4 bg-slate-800 text-white p-4 rounded-3xl border-4 border-slate-900 shadow-[0_8px_0_#0f172a] text-xs z-[100] font-bold">
+        <div class="mb-2 text-sky-400">👾 DEV MODE</div>
+        <div>URL: <span id="debugApiUrl" class="text-white">-</span></div>
+        <div>LVL (Cats): <span id="debugCategoriesCount" class="text-green-400">0</span></div>
+        <div>ITEMS: <span id="debugProductsCount" class="text-pink-400">0</span></div>
+    </div>
+
+    <!-- HEADER (Плавающий пузырь) -->
+    <header class="fixed top-4 left-4 right-4 z-40 max-w-6xl mx-auto">
+        <div class="bg-white rounded-full p-3 sm:p-4 border-4 border-white shadow-[0_8px_0_rgba(203,213,225,0.5)] flex items-center justify-between gap-4">
+            
+            <!-- Логотип (Секретная кнопка админки) -->
+            <div id="secretLogoTrigger" class="flex items-center gap-3 cursor-pointer select-none">
+                <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl shadow-[inset_0_-4px_0_rgba(0,0,0,0.2)]">
+                    🚀
+                </div>
+                <h1 class="font-black text-2xl hidden sm:block text-slate-800">FinPlay</h1>
+            </div>
+
+            <!-- Поиск (Десктоп) -->
+            <div class="flex-1 max-w-xl hidden md:block">
+                <input type="text" id="searchInputDesktop" placeholder="Поиск сокровищ..." 
+                       class="clay-input !py-3 !rounded-full text-center" 
+                       oninput="document.getElementById('searchInputMobile').value=this.value; performSearch();">
+            </div>
+
+            <!-- Правый блок с меню -->
+            <div class="flex items-center gap-3">
+                <button id="menuBtn" class="md:hidden clay-btn clay-btn-white w-12 h-12 flex items-center justify-center text-xl !border-b-[4px]">
+                    🗺️
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <main class="pt-32 px-4 sm:px-6 pb-24 max-w-6xl mx-auto">
+        
+        <!-- Мобильный поиск -->
+        <div class="md:hidden mb-8">
+            <input type="text" id="searchInputMobile" placeholder="Поиск сокровищ..." 
+                   class="clay-input text-center" 
+                   oninput="document.getElementById('searchInputDesktop').value=this.value; performSearch();">
+        </div>
+
+        <!-- КАТЕГОРИИ (Горизонтальный скролл таблеток) -->
+        <div class="mb-10">
+            <h2 class="text-slate-500 font-bold px-2 mb-3 uppercase tracking-wider text-sm flex items-center gap-2">
+                <span>🎯</span> Выберите категорию
+            </h2>
+            <div class="flex gap-4 overflow-x-auto no-scrollbar pb-4 px-2" id="categoryContainer">
+                <!-- Категории через JS -->
+                <button class="pill-btn category-btn flex items-center gap-2 active" data-category="all">
+                    <span class="text-xl">🌟</span> Все вместе
+                </button>
+            </div>
+        </div>
+
+        <!-- ЗАГОЛОВОК СЕКЦИИ -->
+        <div class="flex items-center justify-between mb-6 px-2">
+            <h2 class="text-3xl font-black text-slate-800" id="currentCategoryTitle">Доступные продукты</h2>
+            <div class="bg-blue-100 text-blue-600 px-4 py-2 rounded-full font-bold text-sm hidden sm:block">
+                Новые уровни!
+            </div>
+        </div>
+
+        <!-- ПРОДУКТЫ (Игровая сетка) -->
+        <div id="productsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 px-2">
+            <!-- Карточки продуктов через JS -->
+        </div>
+        
+        <!-- Пустое состояние -->
+        <div id="noProducts" class="hidden py-16 text-center w-full col-span-full">
+            <div class="text-7xl mb-6 animate-bounce">🙈</div>
+            <h3 class="text-3xl font-black text-slate-800 mb-3">Ой, тут пусто!</h3>
+            <p class="text-slate-500 font-bold text-lg">Похоже, мы не нашли то, что вы искали.</p>
+        </div>
+
+    </main>
+
+    <!-- ================= ИГРОВЫЕ МОДАЛКИ ================= -->
+
+    <!-- МОБИЛЬНОЕ МЕНЮ (Карта) -->
+    <div id="categoriesModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black flex items-center gap-2">
+                    <span>🗺️</span> Карта категорий
+                </h3>
+                <button onclick="closeModal('categoriesModal')" class="clay-btn clay-btn-white w-10 h-10 flex items-center justify-center !rounded-full !border-b-[4px]">
+                    ✕
+                </button>
+            </div>
+            <div class="flex flex-col gap-3" id="categoriesList">
+                <!-- Категории через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ДЕТАЛИ ПРОДУКТА (Инвентарь - С Огромным Баннером) -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-6 md:p-8 relative">
+            
+            <!-- Плавающие элементы управления поверх баннера -->
+            <div class="absolute top-10 left-10 right-10 flex justify-between items-start z-20 pointer-events-none">
+                <div class="bg-white/90 backdrop-blur text-slate-700 border-2 border-white px-4 py-2 rounded-2xl font-black text-sm uppercase shadow-sm pointer-events-auto" id="productModalBank">Банк</div>
+                <button onclick="closeModal('productModal')" class="clay-btn clay-btn-white w-12 h-12 flex items-center justify-center !rounded-full !border-b-[4px] flex-shrink-0 shadow-md pointer-events-auto text-xl">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Гигантский Баннер -->
+            <div class="w-full h-56 md:h-72 bg-blue-50 border-4 border-blue-100 rounded-[28px] flex items-center justify-center p-6 mb-6 shadow-inner relative overflow-hidden" id="productModalImageContainer">
+                <!-- Изображение будет добавлено через JS -->
+            </div>
+
+            <div class="flex flex-col items-center text-center mb-6">
+                <h2 class="text-3xl md:text-4xl font-black text-slate-800 leading-tight" id="productModalTitle">Название</h2>
+            </div>
+
+            <div class="bg-yellow-50 border-4 border-yellow-100 rounded-3xl p-6 mb-6 relative">
+                <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full font-black text-sm border-2 border-yellow-500">
+                    СУПЕР БОНУС
+                </div>
+                <p class="text-2xl font-black text-yellow-600 text-center mt-2" id="productModalConditions">Условия</p>
+            </div>
+
+            <div class="bg-slate-50 border-4 border-slate-100 rounded-3xl p-6 mb-8 text-left">
+                <p class="text-slate-400 font-bold uppercase text-xs mb-2">Описание предмета</p>
+                <p class="text-slate-700 font-bold leading-relaxed whitespace-pre-line" id="productModalDescription">Описание</p>
+            </div>
+
+            <button id="productModalBtn" class="clay-btn w-full py-5 text-2xl">
+                ЗАБРАТЬ ЛУТ! 🎁
+            </button>
+        </div>
+    </div>
+
+    <!-- АДМИН ЛОГИН (Взлом терминала) -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 md:p-10 !max-w-md text-center">
+            <div class="w-24 h-24 bg-red-100 rounded-full border-4 border-red-200 mx-auto flex items-center justify-center text-5xl mb-6">
+                🔒
+            </div>
+            <h3 class="text-3xl font-black text-slate-800 mb-2">Закрытая зона!</h3>
+            <p class="text-slate-500 font-bold mb-8">Введите секретный пароль для доступа к режиму создателя.</p>
+            
+            <div class="space-y-6 text-left">
+                <input type="password" id="adminPassword" 
+                       class="clay-input text-center text-2xl tracking-[0.3em]"
+                       placeholder="••••••••">
+                <div class="flex gap-4">
+                    <button onclick="closeModal('adminLoginModal')" class="clay-btn clay-btn-white flex-1 py-4 text-lg">
+                        Назад
+                    </button>
+                    <button id="loginBtn" class="clay-btn clay-btn-green flex-[2] py-4 text-lg">
+                        Взломать 🔓
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- АДМИН ПАНЕЛЬ (Мастерская с Вкладками) -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-4xl h-[90vh] flex flex-col p-6 md:p-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b-4 border-slate-100 pb-6 shrink-0">
+                <div>
+                    <h3 class="text-3xl font-black flex items-center gap-3">
+                        <span>🛠️</span> Мастерская
+                    </h3>
+                    <p class="text-slate-500 font-bold mt-2">Управление игрой</p>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    <button onclick="logoutAdmin()" class="clay-btn clay-btn-red px-4 py-2 text-sm">
+                        ВЫЙТИ
+                    </button>
+                    <button onclick="closeModal('adminPanelModal')" class="clay-btn clay-btn-white w-12 h-12 flex items-center justify-center !rounded-full !border-b-[4px]">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Вкладки-Таблетки -->
+            <div class="flex gap-3 overflow-x-auto no-scrollbar mb-6 p-2 bg-slate-50 rounded-[28px] border-4 border-slate-100 flex-shrink-0">
+                <button id="tabBtnProducts" onclick="switchAdminTab('products')" class="pill-btn flex-1 active !py-3 !text-lg">
+                    Продукты (<span id="productCount">0</span>)
+                </button>
+                <button id="tabBtnCategories" onclick="switchAdminTab('categories')" class="pill-btn flex-1 !py-3 !text-lg">
+                    Категории
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
+                
+                <!-- Вкладка Предметы -->
+                <div id="adminTabProducts">
+                    <button id="addProductBtn" class="clay-btn w-full py-5 text-xl mb-8 flex items-center justify-center gap-3">
+                        <span class="text-3xl leading-none mt-[-4px]">+</span> СОЗДАТЬ НОВЫЙ ПРОДУКТ
+                    </button>
+                    <div class="flex flex-col gap-4" id="adminProductsList"></div>
+                </div>
+
+                <!-- Вкладка Категории -->
+                <div id="adminTabCategories" class="hidden">
+                    <button id="addCategoryBtn" class="clay-btn w-full py-5 text-xl mb-8 flex items-center justify-center gap-3 !bg-purple-500 !border-purple-700">
+                        <span class="text-3xl leading-none mt-[-4px]">+</span> ДОБАВИТЬ КАТЕГОРИЮ
+                    </button>
+                    <div class="flex flex-col gap-4" id="adminCategoriesList"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА ПРОДУКТА (Конструктор Предмета) -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-2xl h-[90vh] flex flex-col p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6 border-b-4 border-slate-100 pb-6 shrink-0">
+                <h3 class="text-2xl font-black" id="productFormTitle">🎨 Конструктор</h3>
+                <button onclick="closeModal('productFormModal')" class="clay-btn clay-btn-white w-10 h-10 flex items-center justify-center !rounded-full !border-b-[4px]">
+                    ✕
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
+                <form id="productForm" class="space-y-6">
+                    <input type="hidden" id="productId">
+                    
+                    <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100">
+                        <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">Название продукта</label>
+                        <input type="text" id="productName" required class="clay-input">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100">
+                            <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">Фракция (Банк)</label>
+                            <input type="text" id="productBank" required class="clay-input">
+                        </div>
+                        
+                        <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100 select-wrapper">
+                            <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">Тип продукта</label>
+                            <select id="productCategory" required class="clay-input">
+                                <option value="">Выбрать...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 rounded-3xl p-6 border-4 border-blue-100 text-center relative cursor-pointer hover:bg-blue-100 transition-colors group">
+                        <label class="block font-black text-blue-500 uppercase tracking-wider text-sm mb-3 cursor-pointer">Иконка (Изображение)</label>
+                        <input type="file" id="productImage" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div id="uploadPlaceholder" class="py-4">
+                            <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">📸</div>
+                            <span class="font-bold text-blue-600">Нажми, чтобы загрузить фото</span>
+                        </div>
+                        <div id="imagePreviewContainer" class="hidden relative z-0 flex justify-center py-2">
+                            <div class="bg-white p-3 rounded-2xl shadow-sm border-2 border-slate-100">
+                                <img id="imagePreview" class="h-20 object-contain">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100">
+                        <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">Свойства (Описание)</label>
+                        <textarea id="productDescription" rows="4" required class="clay-input resize-none"></textarea>
+                    </div>
+                    
+                    <div class="bg-yellow-50 rounded-3xl p-6 border-4 border-yellow-100">
+                        <label class="block font-black text-yellow-600 uppercase tracking-wider text-sm mb-3 ml-2">Супер-бонус (Условия)</label>
+                        <input type="text" id="productConditions" required class="clay-input !border-yellow-300 focus:!border-yellow-500 !bg-white">
+                    </div>
+                    
+                    <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100">
+                        <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">Секретная ссылка</label>
+                        <input type="url" id="productUrl" required class="clay-input text-blue-500" placeholder="https://...">
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-green-50 p-6 rounded-3xl border-4 border-green-100">
+                        <input type="checkbox" id="productActive" checked>
+                        <label class="font-black text-green-700 text-lg">Показывать игрокам (Активен)</label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                        <button type="button" id="deleteProductBtn" class="clay-btn clay-btn-red sm:w-1/3 py-5 text-xl hidden">
+                            УДАЛИТЬ 🗑️
+                        </button>
+                        <button type="submit" class="clay-btn clay-btn-green flex-1 py-5 text-xl">
+                            СОХРАНИТЬ ✨
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА КАТЕГОРИИ (Конструктор Квеста) -->
+    <div id="categoryFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-xl h-[80vh] flex flex-col p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6 border-b-4 border-slate-100 pb-6 shrink-0">
+                <h3 class="text-2xl font-black" id="categoryFormTitle">🗺️ Новая категория</h3>
+                <button onclick="closeModal('categoryFormModal')" class="clay-btn clay-btn-white w-10 h-10 flex items-center justify-center !rounded-full !border-b-[4px]">
+                    ✕
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
+                <form id="categoryForm" class="space-y-6">
+                    <input type="hidden" id="categoryIsEdit" value="false">
+                    
+                    <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100">
+                        <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">ID (Системный ключ)</label>
+                        <input type="text" id="categoryId" required placeholder="напр. credit" class="clay-input">
+                        <p class="text-slate-400 font-bold text-xs mt-2 ml-2">Нельзя изменить после создания.</p>
+                    </div>
+                    
+                    <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100">
+                        <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">Имя Категории</label>
+                        <input type="text" id="categoryName" required placeholder="Кредитные карты" class="clay-input">
+                    </div>
+                    
+                    <div class="bg-slate-50 rounded-3xl p-6 border-4 border-slate-100">
+                        <label class="block font-black text-slate-500 uppercase tracking-wider text-sm mb-3 ml-2">Эмодзи-Иконка</label>
+                        <input type="text" id="categoryIcon" required placeholder="💳" class="clay-input text-2xl text-center !w-24">
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-green-50 p-6 rounded-3xl border-4 border-green-100">
+                        <input type="checkbox" id="categoryActive" checked>
+                        <label class="font-black text-green-700 text-lg">Категория доступна на карте</label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                        <button type="button" id="deleteCategoryBtn" class="clay-btn clay-btn-red sm:w-1/3 py-5 text-xl hidden">
+                            УДАЛИТЬ 🗑️
+                        </button>
+                        <button type="submit" class="clay-btn !bg-purple-500 !border-purple-700 flex-1 py-5 text-xl">
+                            СОХРАНИТЬ ✨
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- API CONFIG -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'FinPlay',
+            VERSION: '11.2.0', // Secret Admin Mode
+            checkApiHealth: async function() {
+                try {
+                    const response = await fetch(`${this.API_BASE_URL}/health`, { headers: { 'Accept': 'application/json' } });
+                    return response.ok;
+                } catch (error) { return false; }
+            }
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <!-- JS ЛОГИКА -->
+    <script>
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+        let scrollPosition = 0;
+        
+        // Переменные для секретного кликера
+        let logoClickCount = 0;
+        let logoClickTimer = null;
+
+        function lockScroll() {
+            scrollPosition = window.pageYOffset;
+            document.body.classList.add('body-no-scroll');
+            document.body.style.top = `-${scrollPosition}px`;
+        }
+
+        function unlockScroll() {
+            document.body.classList.remove('body-no-scroll');
+            document.body.style.top = '';
+            window.scrollTo(0, scrollPosition);
+        }
+
+        function openModal(modalId) {
+            lockScroll();
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            unlockScroll();
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+            document.getElementById('debugCategoriesCount').textContent = categories ? categories.length : 0;
+            document.getElementById('debugProductsCount').textContent = products ? products.length : 0;
+        }
+
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-white border-4 border-red-200 text-red-600 px-6 py-4 rounded-3xl z-[9999] font-black text-lg text-center shadow-[0_10px_0_rgba(254,202,202,0.5)]';
+            errorDiv.innerHTML = `🚨 ${message}`;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        window.logoutAdmin = function() {
+            localStorage.removeItem('adminToken');
+            adminToken = null;
+            isAdminLoggedIn = false;
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+            unlockScroll();
+            showErrorMessage('Игра окончена! Вы вышли. 👋');
+            loadProducts();
+        }
+
+        window.switchAdminTab = (tab) => {
+            document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+            document.getElementById('tabBtnCategories').classList.toggle('active', tab === 'categories');
+            document.getElementById('adminTabProducts').classList.toggle('hidden', tab !== 'products');
+            document.getElementById('adminTabCategories').classList.toggle('hidden', tab !== 'categories');
+        };
+
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories`);
+                if (!response.ok) throw new Error();
+                categories = await response.json();
+                updateDebugInfo();
+                renderCategoryButtons();
+                renderCategoriesList();
+                renderCategorySelect();
+                if (isAdminLoggedIn) renderAdminCategories();
+            } catch (error) {
+                showErrorMessage('Ой! Не смогли загрузить карту категорий. 😢');
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products`);
+                if (!response.ok) throw new Error();
+                products = await response.json();
+                updateDebugInfo();
+                renderProducts();
+                if (isAdminLoggedIn) renderAdminProducts();
+            } catch (error) {
+                showErrorMessage('Ой! Не смогли загрузить продукты. 😢');
+            }
+        }
+
+        // КНОПКИ КАТЕГОРИЙ (Таблетки)
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryContainer');
+            if (!container) return;
+            
+            const allButton = container.querySelector('[data-category="all"]');
+            container.innerHTML = '';
+            container.appendChild(allButton);
+            
+            if (!categories) return;
+            
+            categories.forEach((category) => {
+                const button = document.createElement('button');
+                button.className = `pill-btn category-btn flex items-center gap-2`;
+                button.dataset.category = category.id;
+                button.innerHTML = `<span class="text-xl">${category.icon}</span> ${category.name}`;
+                button.addEventListener('click', () => filterByCategory(category.id));
+                container.appendChild(button);
+            });
+            updateActiveCategory();
+        }
+
+        // МОДАЛКА КАТЕГОРИЙ (Вертикальный список)
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
+                        class="pill-btn w-full flex justify-center items-center gap-3 text-lg ${currentCategory === 'all' ? 'active' : ''}">
+                    <span class="text-2xl">🌟</span> Все вместе
+                </button>
+            `;
+            
+            if (!categories) return;
+            categories.forEach((category) => {
+                const isActive = currentCategory === category.id;
+                const button = document.createElement('button');
+                button.className = `pill-btn w-full flex justify-center items-center gap-3 text-lg ${isActive ? 'active' : ''}`;
+                button.innerHTML = `<span class="text-2xl">${category.icon}</span> ${category.name}`;
+                button.addEventListener('click', () => {
+                    filterByCategory(category.id);
+                    closeModal('categoriesModal');
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Выбрать тип...</option>';
+            if (!categories) return;
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = `${category.icon} ${category.name}`;
+                if (category.id === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function filterByCategory(categoryId) {
+            currentCategory = categoryId;
+            const titleEl = document.getElementById('currentCategoryTitle');
+            if (categoryId === 'all') { titleEl.textContent = 'Доступные продукты'; } 
+            else {
+                const cat = categories.find(c => c.id === categoryId);
+                titleEl.textContent = cat ? `${cat.icon} ${cat.name}` : 'Продукты';
+            }
+            updateActiveCategory();
+            renderProducts();
+            renderCategoriesList();
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if(btn.dataset.category === currentCategory) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function performSearch() {
+            const deskVal = document.getElementById('searchInputDesktop').value.trim().toLowerCase();
+            const mobVal = document.getElementById('searchInputMobile').value.trim().toLowerCase();
+            currentSearch = deskVal || mobVal;
+            renderProducts();
+        }
+
+        // РЕНДЕР КАРТОЧЕК (Игровые предметы)
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            if (!container) return;
+            
+            let filteredProducts = products.filter(product => {
+                const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
+                const matchesSearch = !currentSearch || 
+                    product.name.toLowerCase().includes(currentSearch) ||
+                    product.bank.toLowerCase().includes(currentSearch);
+                return matchesCategory && matchesSearch && (isAdminLoggedIn ? true : product.active);
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('hidden');
+                return;
+            }
+            
+            noProducts.classList.add('hidden');
+            container.innerHTML = '';
+            
+            filteredProducts.forEach(product => {
+                const category = categories.find(c => c.id === product.category);
+                const productCard = document.createElement('div');
+                
+                productCard.className = 'clay-card p-5 sm:p-6 flex flex-col justify-between cursor-pointer h-full group';
+                
+                productCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-24 h-24 sm:w-28 sm:h-28 bg-blue-50 rounded-[24px] flex items-center justify-center text-5xl border-4 border-blue-100 p-2 flex-shrink-0 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform">
+                            ${product.image_url ? `
+                                <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="max-w-full max-h-full object-contain drop-shadow-md">
+                            ` : `
+                                <span>${category?.icon || '🎁'}</span>
+                            `}
+                        </div>
+                        <div class="flex flex-col gap-2 items-end">
+                            <div class="bg-slate-100 text-slate-500 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider text-right">
+                                ${product.bank}
+                            </div>
+                            ${isAdminLoggedIn && !product.active ? `<div class="bg-red-100 text-red-500 border-2 border-red-200 px-2 py-1 rounded-lg text-[10px] font-black uppercase">Скрыт</div>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6 flex-grow">
+                        <h3 class="text-2xl font-black text-slate-800 leading-tight mb-2">${product.name}</h3>
+                        <p class="text-sm font-bold text-slate-500 line-clamp-2">${product.description}</p>
+                    </div>
+                    
+                    <div class="mt-auto">
+                        <div class="bg-yellow-100 border-4 border-yellow-200 rounded-2xl p-3 mb-4 text-center">
+                            <p class="font-black text-yellow-600">${product.conditions}</p>
+                        </div>
+                        <button class="apply-btn clay-btn w-full py-3 text-lg">
+                            ИЗУЧИТЬ 🔍
+                        </button>
+                    </div>
+                `;
+                
+                productCard.addEventListener('click', (e) => {
+                    if (e.target.closest('.apply-btn')) {
+                        window.open(product.url, '_blank');
+                    } else {
+                        showProductDetails(product, category);
+                    }
+                });
+                
+                container.appendChild(productCard);
+            });
+        }
+
+        // ДЕТАЛИ ПРОДУКТА (Модалка Инвентаря)
+        function showProductDetails(product, category) {
+            document.getElementById('productModalBank').textContent = product.bank;
+            document.getElementById('productModalTitle').textContent = product.name;
+            document.getElementById('productModalConditions').textContent = product.conditions;
+            document.getElementById('productModalDescription').textContent = product.description;
+            
+            const imgContainer = document.getElementById('productModalImageContainer');
+            if (product.image_url) {
+                imgContainer.innerHTML = `<img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="max-w-full max-h-full object-contain relative z-10 hover:scale-110 transition-transform duration-300 drop-shadow-xl">`;
+            } else {
+                imgContainer.innerHTML = `
+                    <span class="text-[100px] md:text-[140px] opacity-20 absolute">${category?.icon || '🎁'}</span>
+                    <span class="text-6xl md:text-8xl relative z-10 drop-shadow-lg">${category?.icon || '🎁'}</span>
+                `;
+            }
+            
+            const btn = document.getElementById('productModalBtn');
+            btn.onclick = () => window.open(product.url, '_blank');
+            
+            openModal('productModal');
+        }
+
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) { showErrorMessage('Эй! А где пароль? 🤨'); return; }
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin@finance.ru');
+                formData.append('password', password);
+                
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    isAdminLoggedIn = true;
+                    closeModal('adminLoginModal');
+                    openModal('adminPanelModal');
+                    await loadProducts();
+                    renderAdminProducts();
+                    renderAdminCategories();
+                } else { showErrorMessage('Неверный пароль! Попробуй еще. ❌'); }
+            } catch (error) { showErrorMessage('Связь с сервером потеряна! 📡'); }
+        }
+
+        // АДМИНКА: ПРЕДМЕТЫ
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            document.getElementById('productCount').textContent = products.length;
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'bg-slate-50 border-4 border-slate-100 rounded-3xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-blue-200 transition-colors';
+                item.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-1">
+                            <div class="w-4 h-4 rounded-full border-4 flex-shrink-0 ${product.active ? 'bg-green-400 border-green-500' : 'bg-slate-300 border-slate-400'}"></div>
+                            <span class="text-xs font-black text-slate-400 uppercase tracking-wider">${product.bank}</span>
+                        </div>
+                        <h4 class="text-xl font-black text-slate-800">${product.name}</h4>
+                    </div>
+                    <button onclick="editProduct('${product.id}')" class="clay-btn clay-btn-white w-full md:w-32 py-3 text-sm flex-shrink-0">
+                        НАСТРОИТЬ ⚙️
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            
+            const productId = document.getElementById('productId').value;
+            const isEdit = !!productId;
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('bank', document.getElementById('productBank').value);
+            formData.append('category', document.getElementById('productCategory').value);
+            formData.append('description', document.getElementById('productDescription').value);
+            formData.append('conditions', document.getElementById('productConditions').value);
+            formData.append('url', document.getElementById('productUrl').value);
+            formData.append('active', document.getElementById('productActive').checked);
+            
+            const imageFile = document.getElementById('productImage').files[0];
+            if (imageFile) formData.append('file', imageFile);
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/products/${productId}` : `${window.CONFIG.API_BASE_URL}/products`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка при сохранении! 🚧');
+            } catch (error) { showErrorMessage('Сервер не отвечает! 📡'); }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Точно удалить этот продукт навсегда? 🥺')) return;
+            try {
+                if (!adminToken) return;
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                }
+            } catch (error) { showErrorMessage('Не удалось удалить! 🔧'); }
+        }
+
+        // АДМИНКА: КАТЕГОРИИ
+        function renderAdminCategories() {
+            const container = document.getElementById('adminCategoriesList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            categories.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'bg-slate-50 border-4 border-slate-100 rounded-3xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-purple-200 transition-colors';
+                item.innerHTML = `
+                    <div class="flex items-center gap-4 flex-1">
+                        <span class="text-4xl w-12 text-center flex-shrink-0">${c.icon}</span>
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <div class="w-4 h-4 rounded-full border-4 flex-shrink-0 ${c.active ? 'bg-green-400 border-green-500' : 'bg-slate-300 border-slate-400'}"></div>
+                                <span class="text-xs font-black text-slate-400 uppercase tracking-wider">ID: ${c.id}</span>
+                            </div>
+                            <h4 class="text-xl font-black text-slate-800">${c.name}</h4>
+                        </div>
+                    </div>
+                    <button onclick="editCategory('${c.id}')" class="clay-btn clay-btn-white w-full md:w-32 py-3 text-sm flex-shrink-0">
+                        ИЗМЕНИТЬ ⚙️
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveCategory(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            
+            const id = document.getElementById('categoryId').value;
+            const isEdit = document.getElementById('categoryIsEdit').value === 'true';
+            
+            const payload = {
+                id: id,
+                name: document.getElementById('categoryName').value,
+                icon: document.getElementById('categoryIcon').value,
+                active: document.getElementById('categoryActive').checked
+            };
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/categories/${id}` : `${window.CONFIG.API_BASE_URL}/categories`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка при сохранении категорий! 🚧');
+            } catch (error) { showErrorMessage('Сервер не отвечает! 📡'); }
+        }
+
+        async function deleteCategory(id) {
+            if(!confirm('Внимание! Категория должен быть пуст. Удалить? 💥')) return;
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories/${id}`, {
+                    method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if(response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Категория еще содержит предметы! Очистите его. 🛡️');
+            } catch (error) { showErrorMessage('Ошибка удаления! 🔧'); }
+        }
+
+        // ИНИЦИАЛИЗАЦИЯ
+        async function initApp() {
+            const isApiAvailable = await window.CONFIG.checkApiHealth();
+            if (isApiAvailable) {
+                await loadCategories();
+                await loadProducts();
+                bindEvents();
+            } else {
+                showErrorMessage('Сервер спит! Попробуйте позже. 😴');
+            }
+        }
+
+        function bindEvents() {
+            // Инпуты поиска
+            document.getElementById('searchInputDesktop').addEventListener('input', performSearch);
+            document.getElementById('searchInputMobile').addEventListener('input', performSearch);
+            
+            // Секретный вход в Админку (Клик 6 раз по логотипу)
+            document.getElementById('secretLogoTrigger').addEventListener('click', (e) => {
+                e.preventDefault();
+                logoClickCount++;
+                
+                clearTimeout(logoClickTimer);
+                logoClickTimer = setTimeout(() => {
+                    logoClickCount = 0;
+                }, 2000); 
+
+                if (logoClickCount === 6) {
+                    logoClickCount = 0; 
+                    isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+                }
+            });
+            
+            // Мобильное меню
+            document.getElementById('menuBtn').addEventListener('click', () => {
+                renderCategoriesList();
+                openModal('categoriesModal');
+            });
+            
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') adminLogin();
+            });
+            
+            // Продукты (События)
+            document.getElementById('productForm').addEventListener('submit', saveProduct);
+            document.getElementById('addProductBtn').addEventListener('click', () => {
+                document.getElementById('productFormTitle').textContent = '✨ Создать продукт';
+                document.getElementById('productForm').reset();
+                document.getElementById('productActive').checked = true;
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('deleteProductBtn').classList.add('hidden');
+                document.getElementById('productId').value = '';
+                renderCategorySelect();
+                closeModal('adminPanelModal');
+                openModal('productFormModal');
+            });
+            document.getElementById('deleteProductBtn').addEventListener('click', () => {
+                const productId = document.getElementById('productId').value;
+                if (productId) deleteProduct(productId);
+            });
+            
+            // Категории (События)
+            document.getElementById('categoryForm').addEventListener('submit', saveCategory);
+            document.getElementById('addCategoryBtn').addEventListener('click', () => {
+                document.getElementById('categoryFormTitle').textContent = '🗺️ Новая категория';
+                document.getElementById('categoryForm').reset();
+                document.getElementById('categoryId').readOnly = false;
+                document.getElementById('categoryIsEdit').value = 'false';
+                document.getElementById('categoryActive').checked = true;
+                document.getElementById('deleteCategoryBtn').classList.add('hidden');
+                closeModal('adminPanelModal'); openModal('categoryFormModal');
+            });
+            document.getElementById('deleteCategoryBtn').addEventListener('click', () => {
+                const id = document.getElementById('categoryId').value;
+                if (id) deleteCategory(id);
+            });
+
+            // Изображения
+            document.getElementById('productImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('imagePreview').src = event.target.result;
+                        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                        document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Закрытие
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal.id);
+                });
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal-backdrop:not(.hidden)');
+                    if (openModals.length > 0) closeModal(openModals[openModals.length - 1].id);
+                }
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    document.getElementById('debugPanel').classList.toggle('hidden');
+                }
+            });
+        }
+
+        window.closeModal = closeModal;
+        window.filterByCategory = filterByCategory;
+        
+        window.editProduct = (productId) => {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            document.getElementById('productFormTitle').textContent = '🎨 Редактор продукта';
+            document.getElementById('productId').value = productId;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productBank').value = product.bank;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productConditions').value = product.conditions;
+            document.getElementById('productUrl').value = product.url;
+            document.getElementById('productActive').checked = product.active;
+            
+            if (product.image_url) {
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${product.image_url}`;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+            
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            closeModal('adminPanelModal');
+            openModal('productFormModal');
+        };
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('categoryFormTitle').textContent = '🗺️ Изменить категорию';
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryId').readOnly = true; 
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categoryIcon').value = c.icon;
+            document.getElementById('categoryActive').checked = c.active;
+            document.getElementById('categoryIsEdit').value = 'true';
+            document.getElementById('deleteCategoryBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('categoryFormModal');
+        };
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансовый Каталог | Workspace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Современный, чистый и техничный шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            font-family: 'Manrope', sans-serif;
+            color-scheme: light;
+        }
+        
+        body {
+            background-color: #F9FAFB; /* Gray 50 */
+            color: #111827; /* Gray 900 */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Убираем скроллбары */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+
+        /* Элементы форм */
+        .saas-input {
+            width: 100%;
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #111827;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .saas-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .saas-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .saas-btn-primary { background-color: #4F46E5; color: #FFFFFF; }
+        .saas-btn-primary:hover { background-color: #4338CA; }
+        
+        .saas-btn-outline {
+            background-color: #FFFFFF; color: #374151;
+            border: 1px solid #D1D5DB;
+        }
+        .saas-btn-outline:hover { background-color: #F3F4F6; }
+
+        /* Карточка продукта */
+        .saas-card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            transition: all 0.2s ease;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .saas-card:hover {
+            border-color: #D1D5DB;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+            transform: translateY(-4px);
+        }
+
+        /* Выпадающий список */
+        .select-wrapper { position: relative; }
+        .select-wrapper select { appearance: none; padding-right: 32px; }
+        .select-wrapper::after {
+            content: ""; position: absolute; right: 12px; top: 50%; transform: translateY(-30%);
+            border-width: 5px 4px 0 4px; border-style: solid; border-color: #6B7280 transparent transparent transparent;
+            pointer-events: none;
+        }
+
+        /* Модальные окна */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(17, 24, 39, 0.4);
+            backdrop-filter: blur(2px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+            opacity: 0; animation: fadeIn 0.2s ease-out forwards;
+        }
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 20px;
+            width: 100%; max-width: 640px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid #E5E7EB;
+            display: flex; flex-direction: column;
+        }
+        
+        .modal-enter { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Вкладки админки */
+        .admin-tab { padding: 12px 16px; font-weight: 600; font-size: 0.9rem; color: #6B7280; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .admin-tab.active { color: #4F46E5; border-bottom-color: #4F46E5; }
+
+        .cat-active {
+            background-color: #EEF2FF !important;
+            color: #4F46E5 !important;
+            font-weight: 700 !important;
+        }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Debug Monitor -->
+    <div id="debugPanel" class="fixed bottom-4 right-4 bg-gray-900 text-white p-4 rounded-xl text-xs z-[100] shadow-xl border border-gray-700 font-mono">
+        <div class="font-bold text-gray-400 mb-2 border-b border-gray-700 pb-1">DEV.CONSOLE</div>
+        <div class="mt-1">API: <span id="debugApiUrl" class="text-indigo-400">-</span></div>
+        <div class="mt-1">CATS: <span id="debugCategoriesCount" class="text-emerald-400">0</span></div>
+        <div class="mt-1">ITEMS: <span id="debugProductsCount" class="text-emerald-400">0</span></div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.reload()">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <span class="font-extrabold text-xl text-gray-900 tracking-tight">Finance<span class="text-indigo-600">Hub</span></span>
+            </div>
+
+            <div class="flex-1 max-w-xl hidden md:block">
+                <div class="relative group">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" id="searchInputDesktop" placeholder="Поиск инструментов..." 
+                           class="saas-input pl-9 bg-gray-50 border-transparent focus:bg-white"
+                           oninput="document.getElementById('searchInputMobile').value=this.value; performSearch();">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button id="adminBtn" class="saas-btn saas-btn-outline !py-2 text-sm">
+                    Workspace
+                </button>
+                <button id="menuBtn" class="md:hidden p-2 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Layout -->
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8 items-start">
+        
+        <!-- Sidebar -->
+        <aside class="hidden md:block w-64 flex-shrink-0 sticky top-24">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-3">Навигация</h3>
+            <nav class="flex flex-col gap-1.5" id="categoryContainerDesktop">
+                <button class="category-btn w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-all flex items-center gap-3 cat-active" data-category="all">
+                    <span class="text-lg">📁</span> Все продукты
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main -->
+        <main class="flex-1 min-w-0 w-full pb-20">
+            
+            <!-- Mobile Search/Cats -->
+            <div class="md:hidden mb-8 space-y-4">
+                <input type="text" id="searchInputMobile" placeholder="Поиск..." 
+                       class="saas-input"
+                       oninput="document.getElementById('searchInputDesktop').value=this.value; performSearch();">
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="categoryContainerMobile">
+                    <button class="category-btn px-5 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold whitespace-nowrap cat-active" data-category="all">
+                        Все продукты
+                    </button>
+                </div>
+            </div>
+
+            <div id="productsList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Карточки через JS -->
+            </div>
+            
+            <div id="noProducts" class="hidden bg-white border border-dashed border-gray-300 rounded-3xl p-20 text-center w-full">
+                <h3 class="text-lg font-bold text-gray-400 uppercase tracking-widest">Ничего не найдено</h3>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модалки -->
+
+    <!-- ДЕТАЛИ ПРОДУКТА -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter">
+            <!-- Большая шапка-баннер -->
+            <div class="w-full h-56 bg-gray-50 border-b border-gray-100 relative flex items-center justify-center p-8 overflow-hidden">
+                <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
+                <button onclick="closeModal('productModal')" class="absolute top-4 right-4 z-20 p-2 bg-white/80 backdrop-blur rounded-full shadow-sm hover:bg-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+                <div id="productModalImageContainer" class="relative z-10 w-full h-full flex items-center justify-center">
+                    <!-- Лого через JS -->
+                </div>
+            </div>
+            
+            <div class="p-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="px-2.5 py-1 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded" id="productModalBank">Банк</span>
+                    <div class="h-px flex-1 bg-gray-100"></div>
+                </div>
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 leading-tight" id="productModalTitle">Название</h2>
+                
+                <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 mb-8">
+                    <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Условие</p>
+                    <p class="text-xl font-extrabold text-indigo-700" id="productModalConditions">Условия</p>
+                </div>
+
+                <div class="mb-10">
+                    <p class="text-gray-600 leading-relaxed whitespace-pre-line text-sm font-medium" id="productModalDescription"></p>
+                </div>
+
+                <button id="productModalBtn" class="saas-btn saas-btn-primary w-full py-4 text-lg shadow-xl shadow-indigo-200">
+                    Оформить предложение
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- АДМИН ПАНЕЛЬ -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-5xl h-[90vh]">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white sticky top-0 z-20">
+                <div class="flex items-center gap-6">
+                    <h3 class="font-extrabold text-gray-900">Console</h3>
+                    <nav class="flex">
+                        <button onclick="switchAdminTab('products')" id="tabBtnProducts" class="admin-tab active">Инструменты</button>
+                        <button onclick="switchAdminTab('categories')" id="tabBtnCategories" class="admin-tab">Категории</button>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="logoutAdmin()" class="text-xs font-bold text-red-500 hover:underline uppercase">Выход</button>
+                    <button onclick="closeModal('adminPanelModal')" class="text-gray-400 hover:text-gray-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto bg-gray-50 flex-1">
+                <!-- Вкладка Продукты -->
+                <div id="adminTabProducts">
+                    <div class="flex justify-between items-center mb-6">
+                        <p class="text-sm text-gray-500 font-medium">Управление финансовыми офферами</p>
+                        <button onclick="openProductForm()" class="saas-btn saas-btn-primary !py-2 text-xs uppercase tracking-widest">+ Добавить</button>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3" id="adminProductsList"></div>
+                </div>
+
+                <!-- Вкладка Категории -->
+                <div id="adminTabCategories" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <p class="text-sm text-gray-500 font-medium">Управление разделами каталога</p>
+                        <button onclick="openCategoryForm()" class="saas-btn saas-btn-primary !py-2 text-xs uppercase tracking-widest">+ Категория</button>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3" id="adminCategoriesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- АДМИН ЛОГИН -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-sm p-10 text-center">
+            <h3 class="text-2xl font-black text-gray-900 mb-8 uppercase tracking-tighter">Admin Access</h3>
+            <input type="password" id="adminPassword" class="saas-input mb-4 text-center tracking-[0.5em]" placeholder="••••••••">
+            <button id="loginBtn" class="saas-btn saas-btn-primary w-full py-4 uppercase tracking-widest text-xs">Authorize</button>
+            <button onclick="closeModal('adminLoginModal')" class="mt-4 text-xs font-bold text-gray-400 uppercase">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- ФОРМА ПРОДУКТА -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-2xl">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold uppercase tracking-widest text-sm" id="productFormTitle">Настройка оффера</h3>
+                <button onclick="closeModal('productFormModal')" class="text-gray-400">✕</button>
+            </div>
+            <form id="productForm" class="p-6 space-y-5">
+                <input type="hidden" id="productId">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Название</label>
+                        <input type="text" id="productName" required class="saas-input">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Банк</label>
+                        <input type="text" id="productBank" required class="saas-input">
+                    </div>
+                    <div class="select-wrapper">
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Категория</label>
+                        <select id="productCategory" required class="saas-input bg-white"></select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Изображение</label>
+                    <input type="file" id="productImage" accept="image/*" class="saas-input text-xs">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Условия (Кратко)</label>
+                    <input type="text" id="productConditions" required class="saas-input">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Описание</label>
+                    <textarea id="productDescription" rows="4" required class="saas-input resize-none text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">URL адрес</label>
+                    <input type="url" id="productUrl" required class="saas-input font-mono text-xs">
+                </div>
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                    <input type="checkbox" id="productActive" checked>
+                    <label class="text-xs font-bold uppercase text-gray-600">Активный статус</label>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="saas-btn saas-btn-primary flex-1">СОХРАНИТЬ</button>
+                    <button type="button" id="deleteProductBtn" class="saas-btn saas-btn-outline text-red-500 hidden">УДАЛИТЬ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ФОРМА КАТЕГОРИИ -->
+    <div id="categoryFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-md">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold uppercase tracking-widest text-sm" id="categoryFormTitle">Настройка категории</h3>
+                <button onclick="closeModal('categoryFormModal')" class="text-gray-400">✕</button>
+            </div>
+            <form id="categoryForm" class="p-6 space-y-5">
+                <input type="hidden" id="categoryIsEdit" value="false">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">ID (Англ. системный код)</label>
+                    <input type="text" id="categoryId" required class="saas-input font-mono" placeholder="например, cards">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Название</label>
+                    <input type="text" id="categoryName" required class="saas-input">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Иконка (Emoji)</label>
+                    <input type="text" id="categoryIcon" required class="saas-input text-2xl text-center w-20">
+                </div>
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                    <input type="checkbox" id="categoryActive" checked>
+                    <label class="text-xs font-bold uppercase text-gray-600">Отображать категорию</label>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="saas-btn saas-btn-primary flex-1">СОХРАНИТЬ</button>
+                    <button type="button" id="deleteCategoryBtn" class="saas-btn saas-btn-outline text-red-500 hidden">УДАЛИТЬ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'FinanceHub',
+            VERSION: '14.1.0'
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <script>
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+        let scrollPosition = 0;
+
+        // UI Helpers
+        function lockScroll() { scrollPosition = window.pageYOffset; document.body.classList.add('body-no-scroll'); document.body.style.top = `-${scrollPosition}px`; }
+        function unlockScroll() { document.body.classList.remove('body-no-scroll'); document.body.style.top = ''; window.scrollTo(0, scrollPosition); }
+        function openModal(id) { lockScroll(); document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); unlockScroll(); }
+        
+        function showErrorMessage(msg) {
+            const div = document.createElement('div');
+            div.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full text-xs font-bold z-[200] shadow-2xl';
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        window.logoutAdmin = () => {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        };
+
+        window.switchAdminTab = (tab) => {
+            document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+            document.getElementById('tabBtnCategories').classList.toggle('active', tab === 'categories');
+            document.getElementById('adminTabProducts').classList.toggle('hidden', tab !== 'products');
+            document.getElementById('adminTabCategories').classList.toggle('hidden', tab !== 'categories');
+        };
+
+        // Data Management
+        async function loadData() {
+            try {
+                const [cRes, pRes] = await Promise.all([
+                    fetch(`${window.CONFIG.API_BASE_URL}/categories`),
+                    fetch(`${window.CONFIG.API_BASE_URL}/products`)
+                ]);
+                categories = await cRes.json();
+                products = await pRes.json();
+                
+                document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+                document.getElementById('debugCategoriesCount').textContent = categories.length;
+                document.getElementById('debugProductsCount').textContent = products.length;
+
+                renderCategoryButtons();
+                renderCategorySelect();
+                renderProducts();
+                if(isAdminLoggedIn) {
+                    renderAdminProducts();
+                    renderAdminCategories();
+                }
+            } catch (e) { console.log('Ошибка соединения с сервером.'); }
+        }
+
+        function renderCategoryButtons() {
+            const containers = [
+                document.getElementById('categoryContainerDesktop'),
+                document.getElementById('categoryContainerMobile')
+            ];
+            
+            containers.forEach(c => {
+                if(!c) return;
+                const allBtn = c.querySelector('[data-category="all"]');
+                c.innerHTML = '';
+                c.appendChild(allBtn);
+                categories.forEach(cat => {
+                    const btn = document.createElement('button');
+                    btn.className = c.id.includes('Desktop') 
+                        ? "category-btn w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 flex items-center gap-3 transition-all"
+                        : "category-btn px-5 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold whitespace-nowrap text-gray-600";
+                    btn.dataset.category = cat.id;
+                    btn.innerHTML = c.id.includes('Desktop') ? `<span class="text-lg">${cat.icon}</span> ${cat.name}` : cat.name;
+                    btn.onclick = () => filterByCategory(cat.id);
+                    c.appendChild(btn);
+                });
+            });
+            updateActiveCategory();
+        }
+
+        function filterByCategory(id) {
+            currentCategory = id;
+            updateActiveCategory();
+            renderProducts();
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                const isActive = btn.dataset.category === currentCategory;
+                btn.classList.toggle('cat-active', isActive);
+            });
+        }
+
+        function performSearch() {
+            currentSearch = document.getElementById('searchInputDesktop').value.trim().toLowerCase();
+            renderProducts();
+        }
+
+        // Рендер продуктов (с крупными изображениями)
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            
+            const filtered = products.filter(p => {
+                const matchesCat = currentCategory === 'all' || p.category === currentCategory;
+                const matchesSearch = p.name.toLowerCase().includes(currentSearch) || p.bank.toLowerCase().includes(currentSearch);
+                return matchesCat && matchesSearch && p.active;
+            });
+
+            container.innerHTML = '';
+            filtered.length ? noProducts.classList.add('hidden') : noProducts.classList.remove('hidden');
+
+            filtered.forEach(p => {
+                const cat = categories.find(c => c.id === p.category);
+                const card = document.createElement('div');
+                card.className = 'saas-card group cursor-pointer';
+                card.innerHTML = `
+                    <div class="w-full h-48 bg-gray-50 border-b border-gray-100 flex items-center justify-center p-6 relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-[0.02]" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
+                        ${p.image_url 
+                            ? `<img src="${window.CONFIG.API_BASE_URL}${p.image_url}" class="max-w-full max-h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-110">`
+                            : `<span class="text-5xl opacity-20 grayscale">${cat?.icon || '📄'}</span>`
+                        }
+                    </div>
+                    <div class="p-6 flex-grow flex flex-col">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">${p.bank}</span>
+                        </div>
+                        <h3 class="text-xl font-extrabold text-gray-900 leading-tight mb-2 group-hover:text-indigo-600 transition-colors">${p.name}</h3>
+                        <p class="text-sm text-gray-500 font-medium line-clamp-2 mb-6">${p.description}</p>
+                        
+                        <div class="mt-auto">
+                            <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-4">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ключевое условие</p>
+                                <p class="text-sm font-black text-gray-700 truncate">${p.conditions}</p>
+                            </div>
+                            <button class="saas-btn saas-btn-primary w-full py-3">Подробнее</button>
+                        </div>
+                    </div>
+                `;
+                card.onclick = (e) => {
+                    if(!e.target.closest('button')) showProductDetails(p);
+                    else showProductDetails(p);
+                };
+                container.appendChild(card);
+            });
+        }
+
+        function showProductDetails(p) {
+            const cat = categories.find(c => c.id === p.category);
+            document.getElementById('productModalBank').textContent = p.bank;
+            document.getElementById('productModalTitle').textContent = p.name;
+            document.getElementById('productModalConditions').textContent = p.conditions;
+            document.getElementById('productModalDescription').textContent = p.description;
+            
+            const imgContainer = document.getElementById('productModalImageContainer');
+            imgContainer.innerHTML = p.image_url 
+                ? `<img src="${window.CONFIG.API_BASE_URL}${p.image_url}" class="max-w-full max-h-full object-contain drop-shadow-2xl">`
+                : `<span class="text-7xl opacity-20 grayscale">${cat?.icon || '📄'}</span>`;
+            
+            document.getElementById('productModalBtn').onclick = () => window.open(p.url, '_blank');
+            openModal('productModal');
+        }
+
+        // Админка
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            document.getElementById('productCount').textContent = products.length;
+            container.innerHTML = products.map(p => `
+                <div class="grid grid-cols-12 gap-4 p-4 items-center bg-white border border-gray-100 rounded-xl">
+                    <div class="col-span-1 flex justify-center">
+                        <div class="w-3 h-3 rounded-full ${p.active ? 'bg-emerald-500' : 'bg-red-400'}"></div>
+                    </div>
+                    <div class="col-span-1">
+                         <img src="${p.image_url ? window.CONFIG.API_BASE_URL + p.image_url : ''}" class="w-8 h-8 object-contain bg-gray-50 rounded">
+                    </div>
+                    <div class="col-span-3 font-bold text-sm truncate">${p.name}</div>
+                    <div class="col-span-2 text-xs text-gray-500 uppercase font-black">${p.bank}</div>
+                    <div class="col-span-3 text-xs text-gray-400 font-bold">${categories.find(c => c.id === p.category)?.name || 'Нет'}</div>
+                    <div class="col-span-2 text-right">
+                        <button onclick="editProduct('${p.id}')" class="text-xs font-black text-indigo-600 uppercase hover:underline">Настроить</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.openProductForm = () => {
+            document.getElementById('productFormTitle').textContent = 'Создание оффера';
+            document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('deleteProductBtn').classList.add('hidden');
+            renderCategorySelect();
+            openModal('productFormModal');
+        };
+
+        window.editProduct = (id) => {
+            const p = products.find(x => x.id === id);
+            document.getElementById('productFormTitle').textContent = 'Редактирование оффера';
+            document.getElementById('productId').value = p.id;
+            document.getElementById('productName').value = p.name;
+            document.getElementById('productBank').value = p.bank;
+            document.getElementById('productCategory').value = p.category;
+            document.getElementById('productConditions').value = p.conditions;
+            document.getElementById('productDescription').value = p.description;
+            document.getElementById('productUrl').value = p.url;
+            document.getElementById('productActive').checked = p.active;
+            
+            if(p.image_url) {
+                document.getElementById('imagePreview').src = window.CONFIG.API_BASE_URL + p.image_url;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            }
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            openModal('productFormModal');
+        };
+
+        document.getElementById('productForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('productId').value;
+            const fd = new FormData(e.target);
+            // Добавляем остальные поля вручную, так как FormData может не подхватить если нет атрибута name
+            const payload = new FormData();
+            payload.append('name', document.getElementById('productName').value);
+            payload.append('bank', document.getElementById('productBank').value);
+            payload.append('category', document.getElementById('productCategory').value);
+            payload.append('description', document.getElementById('productDescription').value);
+            payload.append('conditions', document.getElementById('productConditions').value);
+            payload.append('url', document.getElementById('productUrl').value);
+            payload.append('active', document.getElementById('productActive').checked);
+            const file = document.getElementById('productImage').files[0];
+            if(file) payload.append('file', file);
+
+            const res = await fetch(`${window.CONFIG.API_BASE_URL}/products${id ? '/' + id : ''}`, {
+                method: id ? 'PUT' : 'POST',
+                headers: { 'Authorization': `Bearer ${adminToken}` },
+                body: payload
+            });
+            if(res.ok) { await loadData(); closeModal('productFormModal'); showErrorMessage('Сохранено'); }
+        };
+
+        document.getElementById('deleteProductBtn').onclick = async () => {
+            if(!confirm('Удалить?')) return;
+            const id = document.getElementById('productId').value;
+            const res = await fetch(`${window.CONFIG.API_BASE_URL}/products/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${adminToken}` }
+            });
+            if(res.ok) { await loadData(); closeModal('productFormModal'); showErrorMessage('Удалено'); }
+        };
+
+        // Админка категорий
+        function renderAdminCategories() {
+            const container = document.getElementById('adminCategoriesList');
+            container.innerHTML = categories.map(c => `
+                <div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl">
+                    <div class="flex items-center gap-4">
+                        <span class="text-2xl">${c.icon}</span>
+                        <div>
+                            <h4 class="font-bold text-sm">${c.name}</h4>
+                            <p class="text-[10px] font-mono text-gray-400">${c.id}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="w-2 h-2 rounded-full ${c.active ? 'bg-emerald-500' : 'bg-red-400'}"></div>
+                        <button onclick="editCategory('${c.id}')" class="text-xs font-black text-indigo-600 uppercase">Edit</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.openCategoryForm = () => {
+            document.getElementById('categoryFormTitle').textContent = 'Новая категория';
+            document.getElementById('categoryForm').reset();
+            document.getElementById('categoryIsEdit').value = 'false';
+            document.getElementById('categoryId').disabled = false;
+            document.getElementById('deleteCategoryBtn').classList.add('hidden');
+            openModal('categoryFormModal');
+        };
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            document.getElementById('categoryFormTitle').textContent = 'Настройка категории';
+            document.getElementById('categoryIsEdit').value = 'true';
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryId').disabled = true;
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categoryIcon').value = c.icon;
+            document.getElementById('categoryActive').checked = c.active;
+            document.getElementById('deleteCategoryBtn').classList.remove('hidden');
+            openModal('categoryFormModal');
+        };
+
+        document.getElementById('categoryForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const isEdit = document.getElementById('categoryIsEdit').value === 'true';
+            const id = document.getElementById('categoryId').value;
+            const data = {
+                id: id,
+                name: document.getElementById('categoryName').value,
+                icon: document.getElementById('categoryIcon').value,
+                active: document.getElementById('categoryActive').checked
+            };
+            const res = await fetch(`${window.CONFIG.API_BASE_URL}/categories${isEdit ? '/' + id : ''}`, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if(res.ok) { await loadData(); closeModal('categoryFormModal'); showErrorMessage('Категория сохранена'); }
+            else { showErrorMessage('Ошибка (возможно ID занят)'); }
+        };
+
+        document.getElementById('deleteCategoryBtn').onclick = async () => {
+            if(!confirm('Внимание! Удалить можно только пустую категорию. Продолжить?')) return;
+            const id = document.getElementById('categoryId').value;
+            const res = await fetch(`${window.CONFIG.API_BASE_URL}/categories/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${adminToken}` }
+            });
+            if(res.ok) { await loadData(); closeModal('categoryFormModal'); showErrorMessage('Удалено'); }
+            else { showErrorMessage('Ошибка (категория не пуста)'); }
+        };
+
+        // Auth
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            const formData = new URLSearchParams();
+            formData.append('username', 'admin@finance.ru');
+            formData.append('password', password);
+            
+            const res = await fetch(`${window.CONFIG.API_BASE_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('adminToken', data.access_token);
+                location.reload();
+            } else { showErrorMessage('Отказ в доступе'); }
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        // Events
+        document.getElementById('adminBtn').onclick = () => isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+        document.getElementById('loginBtn').onclick = adminLogin;
+        document.getElementById('menuBtn').onclick = () => { renderCategoriesList(); openModal('categoriesModal'); };
+        
+        document.getElementById('productImage').onchange = (e) => {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    document.getElementById('imagePreview').src = ev.target.result;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // Close on escape
+        document.addEventListener('keydown', (e) => { if(e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => closeModal(m.id)); });
+
+        // Init
+        loadData();
+    </script>
+</body>
+</html>

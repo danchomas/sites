@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capital & Wealth | Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Элитная журнальная типографика -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* Базовые цвета: слоновая кость и графит */
+            --bg-paper: #F4F1EA;
+            --text-ink: #1A1A1A;
+            --accent-wine: #8C3A3A;
+            --line-color: rgba(26, 26, 26, 0.15);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg-paper);
+            color: var(--text-ink);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Элегантный скроллбар */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--line-color); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+
+        /* Модальные окна: Плавное появление (Fade & Slide) */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(244, 241, 234, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .modal-content {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            overflow-y: auto;
+            display: flex; flex-direction: column;
+        }
+
+        .modal-enter { animation: elegantFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        @keyframes elegantFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Формы: Журнальный минимализм */
+        .editorial-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--line-color);
+            padding: 12px 0;
+            font-size: 1.1rem;
+            color: var(--text-ink);
+            transition: border-color 0.4s ease;
+        }
+        .editorial-input:focus {
+            outline: none;
+            border-bottom-color: var(--text-ink);
+        }
+        .editorial-input::placeholder { color: rgba(26, 26, 26, 0.3); font-weight: 300; }
+
+        .editorial-btn {
+            background-color: var(--text-ink);
+            color: var(--bg-paper);
+            padding: 16px 32px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.75rem;
+            transition: all 0.4s ease;
+            display: inline-flex; justify-content: center; align-items: center;
+        }
+        .editorial-btn:hover { background-color: var(--accent-wine); }
+
+        .select-wrapper { position: relative; border-bottom: 1px solid var(--line-color); }
+        .select-wrapper select { 
+            appearance: none; background: transparent; width: 100%; padding: 12px 0; border: none; outline: none; cursor: pointer;
+        }
+        .select-wrapper::after {
+            content: "↓"; font-family: 'DM Sans'; position: absolute; right: 0; top: 50%; transform: translateY(-50%); pointer-events: none;
+        }
+
+        /* Карточки: Анимация наведения */
+        .editorial-card {
+            border-bottom: 1px solid var(--line-color);
+            transition: all 0.4s ease;
+        }
+        .editorial-card:hover {
+            border-bottom-color: var(--text-ink);
+        }
+        
+        /* Изображения: Эффект сепии/ЧБ для стиля */
+        .img-editorial {
+            filter: grayscale(100%) contrast(1.1) sepia(10%);
+            mix-blend-mode: multiply;
+            transition: filter 0.5s ease;
+        }
+        .editorial-card:hover .img-editorial { filter: grayscale(0%); }
+
+        /* Вкладки в админке */
+        .admin-tab { color: rgba(26, 26, 26, 0.4); border-bottom: 1px solid transparent; transition: all 0.3s ease; }
+        .admin-tab.active { color: var(--text-ink); border-bottom-color: var(--text-ink); font-weight: 500; }
+        .admin-tab:hover:not(.active) { color: var(--text-ink); }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body class="antialiased selection:bg-[#1A1A1A] selection:text-[#F4F1EA]">
+
+    <!-- Отладка -->
+    <div id="debugPanel" class="fixed top-4 right-4 bg-[#1A1A1A] text-[#F4F1EA] p-4 text-xs z-[100] font-mono tracking-widest">
+        <div class="mb-2 border-b border-[#F4F1EA]/30 pb-1">SYS.MONITOR</div>
+        <div>URL: <span id="debugApiUrl" class="text-gray-400">-</span></div>
+        <div>CAT: <span id="debugCategoriesCount" class="text-gray-400">0</span></div>
+        <div>ITM: <span id="debugProductsCount" class="text-gray-400">0</span></div>
+    </div>
+
+    <!-- SPLIT SCREEN LAYOUT -->
+    <div class="flex flex-col lg:flex-row min-h-screen relative">
+        
+        <!-- ЛЕВАЯ ПАНЕЛЬ (Фиксированная на ПК) -->
+        <div class="w-full lg:w-[40%] lg:fixed lg:h-screen flex flex-col justify-between p-8 md:p-12 lg:p-16 border-b lg:border-b-0 lg:border-r border-[#1A1A1A]/10 bg-[#F4F1EA] z-20">
+            
+            <!-- Шапка левой панели -->
+            <div class="flex justify-between items-center">
+                <div class="font-serif italic text-xl tracking-wide">C&W.</div>
+                <div class="flex gap-4">
+                    <button id="menuBtn" class="text-xs uppercase tracking-[0.2em] hover:text-[#8C3A3A] transition-colors lg:hidden">
+                        Меню
+                    </button>
+                    <button id="adminBtn" class="text-xs uppercase tracking-[0.2em] hover:text-[#8C3A3A] transition-colors">
+                        Доступ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Главный заголовок и поиск -->
+            <div class="my-16 lg:my-0">
+                <h1 class="font-serif text-5xl md:text-6xl lg:text-7xl leading-[1.1] mb-6">
+                    Финансовый <br>
+                    <span class="italic text-[#8C3A3A]">портфель.</span>
+                </h1>
+                <p class="text-sm md:text-base font-light tracking-wide text-[#1A1A1A]/70 max-w-sm mb-12">
+                    Эксклюзивная подборка банковских продуктов и инвестиционных предложений.
+                </p>
+
+                <div class="relative w-full max-w-md">
+                    <input type="text" id="searchInput" placeholder="Поиск предложений..." class="editorial-input pl-0 pr-8">
+                    <span class="absolute right-0 top-1/2 -translate-y-1/2 font-serif italic text-lg opacity-50">/</span>
+                </div>
+            </div>
+
+            <!-- Подвал левой панели -->
+            <div class="hidden lg:block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50">
+                © <span id="currentYear">2024</span> Capital & Wealth<br>
+                Кураторская подборка
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ (Прокручиваемая) -->
+        <div class="w-full lg:w-[60%] lg:ml-[40%] flex flex-col min-h-screen">
+            
+            <!-- Категории (Навигация) -->
+            <nav class="sticky top-0 bg-[#F4F1EA]/90 backdrop-blur-md z-10 border-b border-[#1A1A1A]/10 px-8 md:px-16 py-6 hidden lg:block">
+                <div class="flex gap-8 overflow-x-auto no-scrollbar" id="categoryContainerDesktop">
+                    <!-- Категории будут добавлены через JS -->
+                    <button class="category-btn text-sm uppercase tracking-[0.15em] border-b border-[#1A1A1A] pb-1" data-category="all">
+                        Обзор
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Список продуктов -->
+            <main class="flex-grow p-8 md:p-12 lg:p-16">
+                <div class="flex justify-between items-baseline mb-12">
+                    <h2 class="font-serif text-3xl md:text-4xl" id="currentCategoryTitle">Обзор предложений</h2>
+                    <span class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50">Издание I</span>
+                </div>
+
+                <div id="productsList" class="flex flex-col gap-0">
+                    <!-- Карточки генерируются через JS -->
+                </div>
+                
+                <div id="noProducts" class="hidden text-center py-32">
+                    <span class="font-serif italic text-2xl text-[#1A1A1A]/30">Архив пуст</span>
+                    <p class="text-sm tracking-wide text-[#1A1A1A]/50 mt-4">В данной категории нет доступных материалов.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ================= FULLSCREEN MODALS ================= -->
+
+    <!-- МОБИЛЬНОЕ МЕНЮ КАТЕГОРИЙ -->
+    <div id="categoriesModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 md:p-12">
+            <div class="flex justify-between items-center border-b border-[#1A1A1A]/10 pb-6 mb-12">
+                <h3 class="font-serif text-2xl">Оглавление</h3>
+                <button onclick="closeModal('categoriesModal')" class="text-xs uppercase tracking-[0.2em] hover:text-[#8C3A3A]">
+                    Закрыть ✕
+                </button>
+            </div>
+            <div class="flex flex-col gap-6" id="categoriesList">
+                <!-- Категории через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ДЕТАЛИ ПРОДУКТА (Статья) -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter">
+            <!-- Верхняя панель закрытия -->
+            <div class="sticky top-0 bg-[#F4F1EA]/95 backdrop-blur-md p-8 md:p-12 flex justify-between items-center z-20 border-b border-[#1A1A1A]/5">
+                <span class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50" id="productModalBank"></span>
+                <button onclick="closeModal('productModal')" class="text-xs uppercase tracking-[0.2em] hover:text-[#8C3A3A] border-b border-transparent hover:border-[#8C3A3A] transition-all">
+                    Вернуться к портфелю
+                </button>
+            </div>
+            
+            <div class="p-8 md:p-12 pt-0 max-w-5xl mx-auto w-full" id="productModalContent">
+                <!-- Контент детализации -->
+            </div>
+        </div>
+    </div>
+
+    <!-- АВТОРИЗАЦИЯ (Минимализм) -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 flex items-center justify-center">
+            <button onclick="closeModal('adminLoginModal')" class="absolute top-8 right-8 md:top-12 md:right-12 text-xs uppercase tracking-[0.2em]">
+                Закрыть ✕
+            </button>
+            
+            <div class="w-full max-w-md">
+                <h3 class="font-serif text-4xl mb-2 text-center">Авторизация</h3>
+                <p class="text-xs uppercase tracking-[0.2em] text-center text-[#1A1A1A]/50 mb-16">Служебный вход</p>
+                
+                <div class="space-y-12">
+                    <div>
+                        <input type="password" id="adminPassword" 
+                               class="editorial-input text-center tracking-[0.5em]"
+                               placeholder="КЛЮЧ">
+                    </div>
+                    <button id="loginBtn" class="editorial-btn w-full">
+                        Войти в систему
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ПАНЕЛЬ АДМИНА (Таблица с Вкладками) -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 md:p-16">
+            <div class="flex justify-between items-start md:items-end border-b border-[#1A1A1A] pb-6 mb-12 flex-col md:flex-row gap-6">
+                <div>
+                    <h3 class="font-serif text-3xl md:text-5xl mb-6">Реестр</h3>
+                    
+                    <!-- Вкладки управления -->
+                    <div class="flex gap-8">
+                        <button id="tabBtnProducts" onclick="switchAdminTab('products')" class="admin-tab active text-xs uppercase tracking-[0.2em] pb-2">
+                            Записи (<span id="productCount">0</span>)
+                        </button>
+                        <button id="tabBtnCategories" onclick="switchAdminTab('categories')" class="admin-tab text-xs uppercase tracking-[0.2em] pb-2">
+                            Разделы
+                        </button>
+                    </div>
+                </div>
+                <button onclick="logoutAdmin()" class="text-xs uppercase tracking-[0.2em] text-[#8C3A3A] border-b border-[#8C3A3A] pb-1 hover:text-[#1A1A1A] hover:border-[#1A1A1A] transition-colors">
+                    Покинуть сессию
+                </button>
+            </div>
+            
+            <div class="max-w-5xl mx-auto w-full">
+                
+                <!-- ВКЛАДКА: ПРОДУКТЫ -->
+                <div id="adminTabProducts">
+                    <div class="flex justify-end mb-8">
+                        <button id="addProductBtn" class="text-xs uppercase tracking-[0.2em] border-b border-[#1A1A1A] hover:text-[#8C3A3A] hover:border-[#8C3A3A] transition-all pb-1 flex items-center gap-2">
+                            <span>+</span> Новая запись
+                        </button>
+                    </div>
+                    
+                    <div class="flex flex-col gap-0 border-t border-[#1A1A1A]/10" id="adminProductsList">
+                        <!-- Продукты для админа -->
+                    </div>
+                </div>
+
+                <!-- ВКЛАДКА: КАТЕГОРИИ -->
+                <div id="adminTabCategories" class="hidden">
+                    <div class="flex justify-end mb-8">
+                        <button id="addCategoryBtn" class="text-xs uppercase tracking-[0.2em] border-b border-[#1A1A1A] hover:text-[#8C3A3A] hover:border-[#8C3A3A] transition-all pb-1 flex items-center gap-2">
+                            <span>+</span> Новый раздел
+                        </button>
+                    </div>
+                    
+                    <div class="flex flex-col gap-0 border-t border-[#1A1A1A]/10" id="adminCategoriesList">
+                        <!-- Категории для админа -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА РЕДАКТИРОВАНИЯ ПРОДУКТА (Бланк) -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 md:p-16">
+            <div class="flex justify-between items-center border-b border-[#1A1A1A] pb-6 mb-12 max-w-3xl mx-auto w-full">
+                <h3 class="font-serif text-3xl" id="productFormTitle">Форма записи</h3>
+                <button onclick="closeModal('productFormModal')" class="text-xs uppercase tracking-[0.2em]">
+                    Отмена ✕
+                </button>
+            </div>
+            
+            <div class="max-w-3xl mx-auto w-full">
+                <form id="productForm" class="space-y-10">
+                    <input type="hidden" id="productId">
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Наименование</label>
+                        <input type="text" id="productName" required class="editorial-input font-serif text-2xl">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Эмитент / Банк</label>
+                            <input type="text" id="productBank" required class="editorial-input">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Раздел</label>
+                            <div class="select-wrapper">
+                                <select id="productCategory" required class="font-serif text-lg">
+                                    <option value="">Не выбрано</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-4">Медиа (Логотип)</label>
+                        <div class="relative border border-[#1A1A1A]/20 p-8 text-center hover:border-[#1A1A1A] transition-colors cursor-pointer">
+                            <input type="file" id="productImage" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <div id="uploadPlaceholder" class="text-xs uppercase tracking-[0.2em] text-[#1A1A1A]/50">
+                                Загрузить изображение
+                            </div>
+                            <div id="imagePreviewContainer" class="hidden relative z-0 flex justify-center">
+                                <img id="imagePreview" class="h-24 object-contain img-editorial">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Аннотация</label>
+                        <textarea id="productDescription" rows="3" required class="editorial-input font-serif text-lg leading-relaxed resize-none"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#8C3A3A] mb-2">Выделенные условия</label>
+                        <input type="text" id="productConditions" required placeholder="Напр. Ставка 0%" class="editorial-input font-serif text-xl italic">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Внешняя ссылка</label>
+                        <input type="url" id="productUrl" required class="editorial-input text-sm font-mono" placeholder="https://...">
+                    </div>
+                    
+                    <div class="flex items-center pt-4 border-t border-[#1A1A1A]/10 mt-12">
+                        <input type="checkbox" id="productActive" class="w-4 h-4 accent-[#1A1A1A]" checked>
+                        <label class="ml-4 text-xs uppercase tracking-[0.2em]">Публикация активна</label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-6 pt-8">
+                        <button type="submit" class="editorial-btn flex-1">
+                            Утвердить запись
+                        </button>
+                        <button type="button" id="deleteProductBtn" class="text-xs uppercase tracking-[0.2em] text-[#8C3A3A] border-b border-transparent hover:border-[#8C3A3A] transition-all hidden">
+                            Изъять из архива
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФОРМА РЕДАКТИРОВАНИЯ КАТЕГОРИИ (Бланк) -->
+    <div id="categoryFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter p-8 md:p-16">
+            <div class="flex justify-between items-center border-b border-[#1A1A1A] pb-6 mb-12 max-w-2xl mx-auto w-full">
+                <h3 class="font-serif text-3xl" id="categoryFormTitle">Форма раздела</h3>
+                <button onclick="closeModal('categoryFormModal')" class="text-xs uppercase tracking-[0.2em]">
+                    Отмена ✕
+                </button>
+            </div>
+            
+            <div class="max-w-2xl mx-auto w-full">
+                <form id="categoryForm" class="space-y-10">
+                    <input type="hidden" id="categoryIsEdit" value="false">
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Ключ раздела (ID)</label>
+                        <input type="text" id="categoryId" required placeholder="напр. credit-cards" class="editorial-input font-mono text-lg">
+                        <p class="text-[10px] text-[#1A1A1A]/40 mt-2">Системный идентификатор. Не подлежит изменению после создания.</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Отображаемое Имя</label>
+                        <input type="text" id="categoryName" required placeholder="напр. Кредитные карты" class="editorial-input font-serif text-2xl">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-2">Символ (Эмодзи)</label>
+                        <input type="text" id="categoryIcon" required placeholder="💳" class="editorial-input text-2xl text-center w-24">
+                    </div>
+                    
+                    <div class="flex items-center pt-4 border-t border-[#1A1A1A]/10 mt-12">
+                        <input type="checkbox" id="categoryActive" class="w-4 h-4 accent-[#1A1A1A]" checked>
+                        <label class="ml-4 text-xs uppercase tracking-[0.2em]">Раздел активен</label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-6 pt-8">
+                        <button type="submit" class="editorial-btn flex-1">
+                            Утвердить раздел
+                        </button>
+                        <button type="button" id="deleteCategoryBtn" class="text-xs uppercase tracking-[0.2em] text-[#8C3A3A] border-b border-transparent hover:border-[#8C3A3A] transition-all hidden">
+                            Удалить раздел
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- API CONFIG -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'Capital Wealth',
+            VERSION: '7.1.0', // Editorial Edition + Large Images + Category Admin
+            checkApiHealth: async function() {
+                try {
+                    const response = await fetch(`${this.API_BASE_URL}/health`, { headers: { 'Accept': 'application/json' } });
+                    return response.ok;
+                } catch (error) { return false; }
+            }
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <!-- JS ЛОГИКА -->
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+
+        function openModal(modalId) {
+            document.body.classList.add('body-no-scroll');
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.body.classList.remove('body-no-scroll');
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed bottom-8 right-8 bg-[#8C3A3A] text-[#F4F1EA] px-6 py-4 z-[100] text-xs uppercase tracking-[0.2em] shadow-xl';
+            errorDiv.innerHTML = message;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+            document.getElementById('debugCategoriesCount').textContent = categories ? categories.length : 0;
+            document.getElementById('debugProductsCount').textContent = products ? products.length : 0;
+        }
+
+        window.logoutAdmin = function() {
+            localStorage.removeItem('adminToken');
+            adminToken = null;
+            isAdminLoggedIn = false;
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+            document.body.classList.remove('body-no-scroll');
+            showErrorMessage('Сессия завершена');
+            loadProducts(); // Перезагрузка для скрытия неактивных
+        }
+
+        window.switchAdminTab = (tab) => {
+            document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+            document.getElementById('tabBtnCategories').classList.toggle('active', tab === 'categories');
+            document.getElementById('adminTabProducts').classList.toggle('hidden', tab !== 'products');
+            document.getElementById('adminTabCategories').classList.toggle('hidden', tab !== 'categories');
+        };
+
+        // Загрузка данных
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories`);
+                if (!response.ok) throw new Error();
+                categories = await response.json();
+                updateDebugInfo();
+                renderCategoryButtons();
+                renderCategoriesList();
+                renderCategorySelect();
+                if (isAdminLoggedIn) renderAdminCategories();
+            } catch (error) { showErrorMessage('Сбой получения оглавления'); }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products`);
+                if (!response.ok) throw new Error();
+                products = await response.json();
+                updateDebugInfo();
+                renderProducts();
+                if (isAdminLoggedIn) renderAdminProducts();
+            } catch (error) { showErrorMessage('Сбой получения архива'); }
+        }
+
+        // Рендер навигации
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryContainerDesktop');
+            if (!container) return;
+            
+            const allButton = container.querySelector('[data-category="all"]');
+            container.innerHTML = '';
+            container.appendChild(allButton);
+            
+            if (!categories) return;
+            categories.forEach((category) => {
+                const button = document.createElement('button');
+                button.className = `category-btn text-sm uppercase tracking-[0.15em] border-b border-transparent pb-1 hover:border-[#1A1A1A]/30 transition-all whitespace-nowrap text-[#1A1A1A]/60`;
+                button.dataset.category = category.id;
+                button.textContent = category.name;
+                button.addEventListener('click', () => filterByCategory(category.id));
+                container.appendChild(button);
+            });
+            updateActiveCategory();
+        }
+
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
+                        class="w-full flex justify-between items-end border-b border-[#1A1A1A]/10 pb-4 group">
+                    <span class="font-serif text-2xl group-hover:italic transition-all ${currentCategory === 'all' ? 'italic' : ''}">00. Обзор</span>
+                    <span class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50">—</span>
+                </button>
+            `;
+            
+            if (!categories) return;
+            categories.forEach((category, i) => {
+                const num = String(i + 1).padStart(2, '0');
+                const isActive = currentCategory === category.id;
+                const button = document.createElement('button');
+                button.className = `w-full flex justify-between items-end border-b border-[#1A1A1A]/10 pb-4 group`;
+                button.innerHTML = `
+                    <span class="font-serif text-2xl group-hover:italic transition-all ${isActive ? 'italic' : ''}">${num}. ${category.name}</span>
+                    <span class="text-xl opacity-50 img-editorial">${category.icon}</span>
+                `;
+                button.addEventListener('click', () => {
+                    filterByCategory(category.id);
+                    closeModal('categoriesModal');
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Не выбрано</option>';
+            if (!categories) return;
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                if (category.id === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function filterByCategory(categoryId) {
+            currentCategory = categoryId;
+            const titleEl = document.getElementById('currentCategoryTitle');
+            if (categoryId === 'all') { titleEl.textContent = 'Обзор предложений'; } 
+            else {
+                const cat = categories.find(c => c.id === categoryId);
+                titleEl.textContent = cat ? cat.name : 'Материалы';
+            }
+            updateActiveCategory();
+            renderProducts();
+            renderCategoriesList();
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                const isActive = btn.dataset.category === currentCategory;
+                if(isActive) {
+                    btn.classList.add('border-[#1A1A1A]', 'text-[#1A1A1A]');
+                    btn.classList.remove('border-transparent', 'text-[#1A1A1A]/60');
+                } else {
+                    btn.classList.remove('border-[#1A1A1A]', 'text-[#1A1A1A]');
+                    btn.classList.add('border-transparent', 'text-[#1A1A1A]/60');
+                }
+            });
+        }
+
+        function performSearch() {
+            currentSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+            renderProducts();
+        }
+
+        // РЕНДЕР КАРТОЧЕК (С увеличенными изображениями)
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            if (!container) return;
+            
+            let filteredProducts = products.filter(product => {
+                const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
+                const matchesSearch = !currentSearch || 
+                    product.name.toLowerCase().includes(currentSearch) ||
+                    product.bank.toLowerCase().includes(currentSearch);
+                return matchesCategory && matchesSearch && (isAdminLoggedIn ? true : product.active);
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('hidden');
+                return;
+            }
+            
+            noProducts.classList.add('hidden');
+            container.innerHTML = '';
+            
+            filteredProducts.forEach(product => {
+                const category = categories.find(c => c.id === product.category);
+                const productCard = document.createElement('div');
+                
+                productCard.className = 'editorial-card py-10 flex flex-col md:flex-row gap-8 md:items-center cursor-pointer group';
+                
+                // ИЗМЕНЕНИЕ: Размеры изображения увеличены (w-32 h-32 / sm:w-40 sm:h-40)
+                productCard.innerHTML = `
+                    <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border border-[#1A1A1A]/20 flex items-center justify-center p-6 flex-shrink-0 bg-[#F4F1EA]">
+                        ${product.image_url ? `
+                            <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-full object-contain img-editorial scale-110">
+                        ` : `
+                            <span class="text-5xl opacity-30 img-editorial">${category?.icon || '—'}</span>
+                        `}
+                    </div>
+                    
+                    <div class="flex-1">
+                        <div class="flex gap-4 items-center mb-2">
+                            <span class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50">${product.bank}</span>
+                            ${isAdminLoggedIn && !product.active ? `<span class="text-[10px] uppercase tracking-[0.2em] text-[#8C3A3A] font-bold border border-[#8C3A3A] px-2 py-0.5">Скрыто</span>` : ''}
+                        </div>
+                        <h3 class="font-serif text-3xl leading-tight mb-3 group-hover:italic transition-all">${product.name}</h3>
+                        <p class="text-sm font-light text-[#1A1A1A]/70 line-clamp-2 md:pr-8">${product.description}</p>
+                    </div>
+                    
+                    <div class="md:text-right border-t md:border-t-0 border-[#1A1A1A]/10 pt-6 md:pt-0 md:pl-8 flex flex-row md:flex-col justify-between items-center md:items-end w-full md:w-auto min-w-[150px]">
+                        <div class="mb-0 md:mb-6 text-left md:text-right">
+                            <span class="text-[10px] uppercase tracking-[0.2em] text-[#8C3A3A] block mb-1">Условия</span>
+                            <span class="font-serif italic text-xl">${product.conditions}</span>
+                        </div>
+                        <button class="apply-btn text-xs uppercase tracking-[0.2em] border-b border-[#1A1A1A] pb-1 hover:text-[#8C3A3A] hover:border-[#8C3A3A] transition-all">
+                            Читать
+                        </button>
+                    </div>
+                `;
+                
+                productCard.addEventListener('click', (e) => {
+                    if (e.target.closest('.apply-btn')) { showProductDetails(product); } 
+                    else { showProductDetails(product); }
+                });
+                
+                container.appendChild(productCard);
+            });
+        }
+
+        // ДЕТАЛИ ПРОДУКТА (С гигантским изображением)
+        function showProductDetails(product) {
+            const category = categories.find(c => c.id === product.category);
+            document.getElementById('productModalBank').textContent = `${product.bank} // ${category ? category.name : 'Misc'}`;
+            
+            document.getElementById('productModalContent').innerHTML = `
+                <article class="pt-8">
+                    <header class="text-center mb-16">
+                        <h1 class="font-serif text-5xl md:text-7xl leading-[1.1] mb-8 px-4">${product.name}</h1>
+                        
+                        <!-- ИЗМЕНЕНИЕ: Огромное hero-изображение (h-64 md:h-96) -->
+                        <div class="w-full max-w-4xl mx-auto py-16 border-y border-[#1A1A1A]/10 my-12 bg-[#F4F1EA]/50">
+                            ${product.image_url ? `
+                                <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-64 md:h-96 object-contain img-editorial drop-shadow-sm">
+                            ` : `
+                                <div class="text-[120px] md:text-[180px] opacity-10 img-editorial">${category?.icon || '—'}</div>
+                            `}
+                        </div>
+                    </header>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 px-4 md:px-0">
+                        <div class="md:col-span-4 border-t md:border-t-0 md:border-r border-[#1A1A1A]/10 pt-8 md:pt-0 md:pr-12">
+                            <h4 class="text-[10px] uppercase tracking-[0.2em] text-[#8C3A3A] mb-4">Ключевые условия</h4>
+                            <p class="font-serif text-3xl md:text-4xl italic leading-tight mb-12 text-[#1A1A1A]">${product.conditions}</p>
+                            
+                            <button onclick="window.open('${product.url}', '_blank')" class="editorial-btn w-full text-[10px]">
+                                Перейти на сайт
+                            </button>
+                        </div>
+                        
+                        <div class="md:col-span-8">
+                            <h4 class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-6">Детальный обзор</h4>
+                            <p class="font-serif text-xl md:text-2xl leading-relaxed text-[#1A1A1A]/80 whitespace-pre-line">${product.description}</p>
+                        </div>
+                    </div>
+                </article>
+            `;
+            
+            openModal('productModal');
+        }
+
+        // АВТОРИЗАЦИЯ
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) { showErrorMessage('Введите ключ'); return; }
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin@finance.ru');
+                formData.append('password', password);
+                
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    isAdminLoggedIn = true;
+                    closeModal('adminLoginModal');
+                    openModal('adminPanelModal');
+                    await loadProducts();
+                    renderAdminProducts();
+                    renderAdminCategories();
+                } else { showErrorMessage('Доступ отклонен'); }
+            } catch (error) { showErrorMessage('Ошибка сервера'); }
+        }
+
+        // АДМИНКА: ПРОДУКТЫ
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            document.getElementById('productCount').textContent = String(products.length).padStart(2, '0');
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'flex flex-col sm:flex-row sm:items-center justify-between py-6 border-b border-[#1A1A1A]/10 group';
+                item.innerHTML = `
+                    <div class="flex-1 mb-4 sm:mb-0">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="text-[10px] uppercase tracking-[0.2em] ${product.active ? 'text-[#1A1A1A]/50' : 'text-[#8C3A3A] font-bold'}">${product.active ? 'Активен' : 'Скрыт'}</span>
+                            <span class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/30">—</span>
+                            <span class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/50">${product.bank}</span>
+                        </div>
+                        <h4 class="font-serif text-2xl">${product.name}</h4>
+                    </div>
+                    <button onclick="editProduct('${product.id}')" class="text-xs uppercase tracking-[0.2em] border-b border-transparent group-hover:border-[#1A1A1A] pb-1 transition-all">
+                        Редактировать
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            const productId = document.getElementById('productId').value;
+            const isEdit = !!productId;
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('bank', document.getElementById('productBank').value);
+            formData.append('category', document.getElementById('productCategory').value);
+            formData.append('description', document.getElementById('productDescription').value);
+            formData.append('conditions', document.getElementById('productConditions').value);
+            formData.append('url', document.getElementById('productUrl').value);
+            formData.append('active', document.getElementById('productActive').checked);
+            
+            const imageFile = document.getElementById('productImage').files[0];
+            if (imageFile) formData.append('file', imageFile);
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/products/${productId}` : `${window.CONFIG.API_BASE_URL}/products`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                    body: formData
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Ошибка записи');
+            } catch (error) { showErrorMessage('Сетевой сбой'); }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Изъять эту запись безвозвратно?')) return;
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products/${productId}`, {
+                    method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                }
+            } catch (error) { showErrorMessage('Сбой удаления'); }
+        }
+
+        // АДМИНКА: КАТЕГОРИИ
+        function renderAdminCategories() {
+            const container = document.getElementById('adminCategoriesList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            categories.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'flex flex-col sm:flex-row sm:items-center justify-between py-6 border-b border-[#1A1A1A]/10 group';
+                item.innerHTML = `
+                    <div class="flex items-center gap-6 mb-4 sm:mb-0">
+                        <span class="text-3xl opacity-60">${c.icon}</span>
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <span class="text-[10px] uppercase tracking-[0.2em] ${c.active ? 'text-[#1A1A1A]/50' : 'text-[#8C3A3A] font-bold'}">${c.active ? 'Активен' : 'Скрыт'}</span>
+                                <span class="text-[10px] uppercase tracking-[0.2em] text-[#1A1A1A]/30">ID: ${c.id}</span>
+                            </div>
+                            <h4 class="font-serif text-2xl">${c.name}</h4>
+                        </div>
+                    </div>
+                    <button onclick="editCategory('${c.id}')" class="text-xs uppercase tracking-[0.2em] border-b border-transparent group-hover:border-[#1A1A1A] pb-1 transition-all">
+                        Редактировать
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveCategory(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            
+            const id = document.getElementById('categoryId').value;
+            const isEdit = document.getElementById('categoryIsEdit').value === 'true';
+            
+            const payload = {
+                id: id,
+                name: document.getElementById('categoryName').value,
+                icon: document.getElementById('categoryIcon').value,
+                active: document.getElementById('categoryActive').checked
+            };
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/categories/${id}` : `${window.CONFIG.API_BASE_URL}/categories`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Сбой сохранения раздела');
+            } catch (error) { showErrorMessage('Сетевой сбой'); }
+        }
+
+        async function deleteCategory(id) {
+            if(!confirm('Внимание! Раздел должен быть пуст. Удалить?')) return;
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories/${id}`, {
+                    method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if(response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('Раздел не пуст или произошла ошибка');
+            } catch (error) { showErrorMessage('Сбой удаления'); }
+        }
+
+        // ИНИЦИАЛИЗАЦИЯ И СОБЫТИЯ
+        async function initApp() {
+            const isApiAvailable = await window.CONFIG.checkApiHealth();
+            if (isApiAvailable) {
+                await loadCategories();
+                await loadProducts();
+                bindEvents();
+            } else {
+                showErrorMessage('Связь с базой утеряна');
+            }
+        }
+
+        function bindEvents() {
+            document.getElementById('searchInput').addEventListener('input', performSearch);
+            
+            document.getElementById('adminBtn').addEventListener('click', () => {
+                isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+            });
+            document.getElementById('menuBtn').addEventListener('click', () => {
+                renderCategoriesList(); openModal('categoriesModal');
+            });
+            
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') adminLogin();
+            });
+            
+            // Форма продукта
+            document.getElementById('productForm').addEventListener('submit', saveProduct);
+            document.getElementById('addProductBtn').addEventListener('click', () => {
+                document.getElementById('productFormTitle').textContent = 'Новая запись';
+                document.getElementById('productForm').reset();
+                document.getElementById('productActive').checked = true;
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('deleteProductBtn').classList.add('hidden');
+                document.getElementById('productId').value = '';
+                renderCategorySelect();
+                closeModal('adminPanelModal'); openModal('productFormModal');
+            });
+            document.getElementById('deleteProductBtn').addEventListener('click', () => {
+                const productId = document.getElementById('productId').value;
+                if (productId) deleteProduct(productId);
+            });
+            
+            // Форма категории
+            document.getElementById('categoryForm').addEventListener('submit', saveCategory);
+            document.getElementById('addCategoryBtn').addEventListener('click', () => {
+                document.getElementById('categoryFormTitle').textContent = 'Новый раздел';
+                document.getElementById('categoryForm').reset();
+                document.getElementById('categoryId').readOnly = false;
+                document.getElementById('categoryIsEdit').value = 'false';
+                document.getElementById('categoryActive').checked = true;
+                document.getElementById('deleteCategoryBtn').classList.add('hidden');
+                closeModal('adminPanelModal'); openModal('categoryFormModal');
+            });
+            document.getElementById('deleteCategoryBtn').addEventListener('click', () => {
+                const id = document.getElementById('categoryId').value;
+                if (id) deleteCategory(id);
+            });
+            
+            // Предпросмотр картинки
+            document.getElementById('productImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('imagePreview').src = event.target.result;
+                        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                        document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Закрытие модалок
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal.id);
+                });
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal-backdrop:not(.hidden)');
+                    if (openModals.length > 0) closeModal(openModals[openModals.length - 1].id);
+                }
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    document.getElementById('debugPanel').classList.toggle('hidden');
+                }
+            });
+        }
+
+        // Глобальные функции для inline onclick
+        window.closeModal = closeModal;
+        window.filterByCategory = filterByCategory;
+        
+        window.editProduct = (productId) => {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            document.getElementById('productFormTitle').textContent = 'Правка записи';
+            document.getElementById('productId').value = productId;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productBank').value = product.bank;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productConditions').value = product.conditions;
+            document.getElementById('productUrl').value = product.url;
+            document.getElementById('productActive').checked = product.active;
+            
+            if (product.image_url) {
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${product.image_url}`;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+            
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('productFormModal');
+        };
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('categoryFormTitle').textContent = 'Правка раздела';
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryId').readOnly = true; 
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categoryIcon').value = c.icon;
+            document.getElementById('categoryActive').checked = c.active;
+            document.getElementById('categoryIsEdit').value = 'true';
+            document.getElementById('deleteCategoryBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('categoryFormModal');
+        };
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

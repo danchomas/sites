@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FNNC // SYSTEM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Strict Grotesk, Helvetica-inspired -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-black: #000000;
+            --color-white: #FFFFFF;
+            --color-accent: #0020FF; /* Ultramarine */
+            --color-gray: #E5E5E5;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-white);
+            color: var(--color-black);
+            -webkit-font-smoothing: antialiased;
+            text-transform: uppercase;
+        }
+
+        /* Hide scrollbar for aesthetics */
+        ::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .body-no-scroll { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+
+        /* Brutal modals */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex; justify-content: flex-end;
+        }
+        
+        .modal-content {
+            background: var(--color-white);
+            width: 100%; height: 100%;
+            overflow-y: auto;
+            border-left: 1px solid var(--color-black);
+            display: flex; flex-direction: column;
+        }
+        
+        /* Tablets and PC - modal slides from right */
+        @media (min-width: 768px) {
+            .modal-content { max-width: 50%; }
+            #adminLoginModal .modal-content, #productFormModal .modal-content, #categoryFormModal .modal-content { 
+                max-width: 600px; margin: auto; height: auto; max-height: 90vh; border: 1px solid var(--color-black); 
+            }
+        }
+
+        .modal-enter { animation: slideFast 0.25s ease-out; }
+        @keyframes slideFast {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        /* Inputs: Giant and minimal */
+        .swiss-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--color-black);
+            padding: 20px 0;
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: var(--color-black);
+            outline: none;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .swiss-input:focus {
+            color: var(--color-accent);
+            border-bottom-color: var(--color-accent);
+        }
+        .swiss-input::placeholder { color: #CCCCCC; }
+
+        .swiss-input-sm {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--color-black);
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            outline: none;
+        }
+        .swiss-input-sm:focus { border-color: var(--color-accent); color: var(--color-accent); }
+
+        /* Select wrapper */
+        .select-wrapper { position: relative; }
+        .select-wrapper select { appearance: none; cursor: pointer; }
+        .select-wrapper::after {
+            content: "↓"; position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+            font-weight: 900; pointer-events: none;
+        }
+
+        /* Buttons */
+        .swiss-btn {
+            background-color: var(--color-black);
+            color: var(--color-white);
+            font-weight: 900;
+            padding: 24px;
+            text-align: center;
+            letter-spacing: 0.1em;
+            transition: background-color 0s, color 0s;
+            border: 1px solid var(--color-black);
+            cursor: pointer;
+        }
+        .swiss-btn:hover {
+            background-color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+        .swiss-btn-outline {
+            background-color: transparent;
+            color: var(--color-black);
+        }
+        .swiss-btn-outline:hover {
+            background-color: var(--color-black);
+            color: var(--color-white);
+        }
+
+        /* Checkbox */
+        input[type="checkbox"] {
+            appearance: none; width: 24px; height: 24px;
+            border: 2px solid var(--color-black);
+            cursor: pointer; position: relative;
+        }
+        input[type="checkbox"]:checked { background-color: var(--color-accent); border-color: var(--color-accent); }
+        input[type="checkbox"]:checked::after {
+            content: ""; position: absolute; left: 6px; top: 2px; width: 8px; height: 14px;
+            border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg);
+        }
+
+        /* Admin Tabs */
+        .admin-tab { opacity: 0.3; border-bottom: 2px solid transparent; transition: opacity 0.2s; padding-bottom: 4px; }
+        .admin-tab.active { opacity: 1; border-bottom-color: var(--color-black); }
+        .admin-tab:hover { opacity: 1; }
+
+        /* Image effects */
+        .img-swiss { mix-blend-mode: multiply; filter: grayscale(100%) contrast(1.2); }
+
+        #debugPanel { display: none; }
+        body.debug #debugPanel { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- SYS.DEBUG -->
+    <div id="debugPanel" class="fixed bottom-4 left-4 bg-black text-white p-4 text-[10px] font-bold z-[200] tracking-widest border border-white/20">
+        <div class="border-b border-white/30 pb-2 mb-2 text-accent">DIAGNOSTICS</div>
+        <div>ENDPOINT: <span id="debugApiUrl">-</span></div>
+        <div>DATA.CATS: <span id="debugCategoriesCount">0</span></div>
+        <div>DATA.ITEMS: <span id="debugProductsCount">0</span></div>
+    </div>
+
+    <!-- Thin Navigation Bar -->
+    <header class="fixed top-0 left-0 w-full bg-white border-b border-black flex justify-between items-center px-4 py-3 z-40 text-[10px] font-bold tracking-widest">
+        <div class="flex gap-8">
+        </div>
+        <div class="flex gap-6">
+            <button id="adminBtn" class="hover:text-[#0020FF]">A D M I N</button>
+            <button id="menuBtn" class="hover:text-[#0020FF]">M E N U</button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="pt-20 px-4 md:px-8 max-w-[1600px] mx-auto min-h-screen flex flex-col">
+        
+        <!-- Centered Hero Section -->
+        <div class="py-16 md:py-24 border-b border-black flex flex-col items-center justify-center text-center">
+            <h1 class="text-5xl md:text-7xl font-black leading-[0.9] tracking-tighter mb-12">
+                FINANCIAL<br>
+                <span class="text-[#0020FF]">INSTRUMENTS.</span>
+            </h1>
+            
+            <div class="w-full max-w-3xl relative group">
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 text-3xl md:text-5xl font-black group-focus-within:text-[#0020FF] transition-colors">→</span>
+                <input type="text" id="searchInput" placeholder="SEARCH ASSETS" class="swiss-input pl-12 md:pl-20 text-center">
+            </div>
+            
+            <div class="text-xs font-bold mt-8 text-gray-500 tracking-widest">
+                DATABASE OF AVAILABLE BANKING PRODUCTS, CREDIT CARDS, AND LOANS.
+            </div>
+        </div>
+
+        <!-- Category Navigation -->
+        <div class="py-6 border-b border-black sticky top-12 bg-white z-30">
+            <div class="flex gap-8 overflow-x-auto no-scrollbar items-center" id="categoryContainer">
+                <!-- Categories injected via JS -->
+                <button class="category-btn text-2xl md:text-4xl font-black tracking-tighter whitespace-nowrap text-black" data-category="all">
+                    ALL
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Header -->
+        <div class="flex justify-between items-end pt-8 pb-4">
+            <h2 class="text-xl md:text-2xl font-black tracking-tighter" id="currentCategoryTitle">ALL PRODUCTS</h2>
+            <div class="text-[10px] font-bold tracking-widest hidden md:block">INDEX / DIR</div>
+        </div>
+
+        <!-- Product Grid. 1px gap hack -->
+        <div class="bg-black border border-black grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1px] mb-24" id="productsList">
+            <!-- Product Cards -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="noProducts" class="hidden border border-black p-24 text-center mb-24">
+            <h3 class="text-6xl font-black tracking-tighter mb-4">NULL</h3>
+            <p class="text-sm font-bold tracking-widest text-gray-500">NO DATA FOUND MATCHING CRITERIA.</p>
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- CATEGORIES MENU (Full Screen Sidebar) -->
+    <div id="categoriesModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter">
+            <div class="p-6 border-b border-black flex justify-between items-center sticky top-0 bg-white z-10">
+                <span class="text-[10px] font-bold tracking-widest">DIRECTORY // MENU</span>
+                <button onclick="closeModal('categoriesModal')" class="text-3xl font-black leading-none hover:text-[#0020FF]">✕</button>
+            </div>
+            <div class="flex flex-col p-6 gap-0" id="categoriesList">
+                <!-- Categories -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCT DETAILS (Large Banner Layout) -->
+    <div id="productModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !p-0">
+            <!-- Top Sticky Bar inside modal -->
+            <div class="p-6 border-b border-black flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur z-20">
+                <span class="text-[10px] font-bold tracking-widest" id="productModalBank">PROVIDER</span>
+                <button onclick="closeModal('productModal')" class="text-3xl font-black leading-none hover:text-[#0020FF] bg-transparent border-none">✕</button>
+            </div>
+            
+            <div class="flex-grow flex flex-col" id="productModalContent">
+                <!-- Details injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN LOGIN -->
+    <div id="adminLoginModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter">
+            <div class="p-6 border-b border-black flex justify-between items-center">
+                <span class="text-[10px] font-bold tracking-widest">SYS.AUTH</span>
+                <button onclick="closeModal('adminLoginModal')" class="text-3xl font-black leading-none hover:text-[#0020FF]">✕</button>
+            </div>
+            <div class="p-8 md:p-16 flex-grow flex flex-col justify-center">
+                <h3 class="text-6xl font-black tracking-tighter leading-none mb-12">ROOT<br>ACCESS.</h3>
+                
+                <div class="space-y-12">
+                    <div>
+                        <input type="password" id="adminPassword" 
+                               class="swiss-input"
+                               placeholder="PASSWORD_">
+                    </div>
+                    <button id="loginBtn" class="swiss-btn w-full">
+                        AUTHENTICATE →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanelModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter !max-w-full">
+            <div class="p-6 border-b border-black flex flex-col md:flex-row justify-between md:items-center sticky top-0 bg-white z-10 gap-4">
+                <div class="flex flex-col md:flex-row md:items-center gap-6">
+                    <span class="text-2xl font-black tracking-tighter">DATA MANAGER</span>
+                    <div class="flex gap-4">
+                        <button id="tabBtnProducts" onclick="switchAdminTab('products')" class="admin-tab active text-sm font-bold tracking-widest">
+                            ASSETS [<span id="productCount">0</span>]
+                        </button>
+                        <button id="tabBtnCategories" onclick="switchAdminTab('categories')" class="admin-tab text-sm font-bold tracking-widest">
+                            CATEGORIES
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-6 items-center">
+                    <button onclick="logoutAdmin()" class="text-[10px] font-bold tracking-widest text-red-600 hover:text-black">LOG OUT</button>
+                    <button onclick="closeModal('adminPanelModal')" class="text-3xl font-black leading-none hover:text-[#0020FF]">✕</button>
+                </div>
+            </div>
+            
+            <div class="p-6 md:p-12">
+                
+                <!-- ASSETS TAB -->
+                <div id="adminTabProducts">
+                    <button id="addProductBtn" class="swiss-btn w-full md:w-auto mb-12">
+                        + CREATE NEW ASSET
+                    </button>
+                    
+                    <div class="bg-black border border-black grid grid-cols-1 gap-[1px]" id="adminProductsList">
+                        <!-- Products -->
+                    </div>
+                </div>
+
+                <!-- CATEGORIES TAB -->
+                <div id="adminTabCategories" class="hidden">
+                    <button id="addCategoryBtn" class="swiss-btn w-full md:w-auto mb-12 !bg-transparent !text-black hover:!bg-[#0020FF] hover:!text-white hover:!border-[#0020FF]">
+                        + CREATE NEW CATEGORY
+                    </button>
+                    
+                    <div class="bg-black border border-black grid grid-cols-1 gap-[1px]" id="adminCategoriesList">
+                        <!-- Categories -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCT FORM -->
+    <div id="productFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter">
+            <div class="p-6 border-b border-black flex justify-between items-center sticky top-0 bg-white z-10">
+                <span class="text-xl font-black tracking-tighter" id="productFormTitle">EDIT ENTRY</span>
+                <button onclick="closeModal('productFormModal')" class="text-3xl font-black leading-none hover:text-[#0020FF]">✕</button>
+            </div>
+            
+            <div class="p-6 md:p-12 flex-grow overflow-y-auto">
+                <form id="productForm" class="space-y-8">
+                    <input type="hidden" id="productId">
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2">PRODUCT IDENTIFIER</label>
+                        <input type="text" id="productName" required class="swiss-input-sm text-2xl">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-bold tracking-widest mb-2">PROVIDER / ISSUER</label>
+                            <input type="text" id="productBank" required class="swiss-input-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[10px] font-bold tracking-widest mb-2">CATEGORY CLUSTER</label>
+                            <div class="select-wrapper">
+                                <select id="productCategory" required class="swiss-input-sm bg-white">
+                                    <option value="">SELECT...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2">VISUAL ASSET (LOGO)</label>
+                        <div class="relative border border-black p-8 text-center hover:bg-gray-100 transition-colors cursor-pointer group">
+                            <input type="file" id="productImage" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <div id="uploadPlaceholder" class="font-bold text-xl tracking-tighter">
+                                CLICK TO UPLOAD
+                            </div>
+                            <div id="imagePreviewContainer" class="hidden relative z-0 flex justify-center bg-white p-4 border border-black">
+                                <img id="imagePreview" class="h-24 object-contain img-swiss">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2">FULL SPECIFICATION</label>
+                        <textarea id="productDescription" rows="4" required class="swiss-input-sm resize-none"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2 text-[#0020FF]">KEY METRICS / CONDITIONS</label>
+                        <input type="text" id="productConditions" required class="swiss-input-sm text-[#0020FF] border-[#0020FF] text-xl">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2">ACTION URL</label>
+                        <input type="url" id="productUrl" required class="swiss-input-sm" placeholder="HTTPS://">
+                    </div>
+                    
+                    <div class="flex items-center gap-4 p-6 border border-black bg-gray-50">
+                        <input type="checkbox" id="productActive" checked>
+                        <label class="text-xl font-black tracking-tighter">STATUS: PUBLIC</label>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 pt-8">
+                        <button type="submit" class="swiss-btn flex-1">
+                            COMMIT CHANGES
+                        </button>
+                        <button type="button" id="deleteProductBtn" class="swiss-btn swiss-btn-outline md:w-1/3 !text-red-600 !border-red-600 hover:!bg-red-600 hover:!text-white hidden">
+                            DELETE
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CATEGORY FORM -->
+    <div id="categoryFormModal" class="modal-backdrop hidden">
+        <div class="modal-content modal-enter">
+            <div class="p-6 border-b border-black flex justify-between items-center sticky top-0 bg-white z-10">
+                <span class="text-xl font-black tracking-tighter" id="categoryFormTitle">EDIT CATEGORY</span>
+                <button onclick="closeModal('categoryFormModal')" class="text-3xl font-black leading-none hover:text-[#0020FF]">✕</button>
+            </div>
+            
+            <div class="p-6 md:p-12 flex-grow overflow-y-auto">
+                <form id="categoryForm" class="space-y-8">
+                    <input type="hidden" id="categoryIsEdit" value="false">
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2">SYSTEM ID (KEY)</label>
+                        <input type="text" id="categoryId" required placeholder="e.g. loans" class="swiss-input-sm text-2xl font-mono">
+                        <p class="text-[10px] font-bold text-gray-500 mt-2">IMMUTABLE AFTER CREATION.</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2">DISPLAY LABEL</label>
+                        <input type="text" id="categoryName" required placeholder="e.g. Personal Loans" class="swiss-input-sm text-2xl">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold tracking-widest mb-2">SYMBOL (EMOJI/TEXT)</label>
+                        <input type="text" id="categoryIcon" required placeholder="■" class="swiss-input-sm text-4xl w-32 text-center">
+                    </div>
+                    
+                    <div class="flex items-center gap-4 p-6 border border-black bg-gray-50">
+                        <input type="checkbox" id="categoryActive" checked>
+                        <label class="text-xl font-black tracking-tighter">STATUS: PUBLIC</label>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 pt-8">
+                        <button type="submit" class="swiss-btn flex-1 !bg-[#0020FF] !border-[#0020FF] hover:!bg-black hover:!border-black">
+                            COMMIT CATEGORY
+                        </button>
+                        <button type="button" id="deleteCategoryBtn" class="swiss-btn swiss-btn-outline md:w-1/3 !text-red-600 !border-red-600 hover:!bg-red-600 hover:!text-white hidden">
+                            DELETE
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- API CONFIG -->
+    <script>
+        const getApiBaseUrl = () => {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+            return 'https://finance-world-backend.up.railway.app';
+        };
+
+        const CONFIG = {
+            API_BASE_URL: getApiBaseUrl(),
+            APP_NAME: 'FNNC SYSTEM',
+            VERSION: '9.1.0', // English + Categories + Banner
+            checkApiHealth: async function() {
+                try {
+                    const response = await fetch(`${this.API_BASE_URL}/health`, { headers: { 'Accept': 'application/json' } });
+                    return response.ok;
+                } catch (error) { return false; }
+            }
+        };
+        window.CONFIG = CONFIG;
+    </script>
+
+    <!-- JS LOGIC -->
+    <script>
+        // Header clock
+        setInterval(() => {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', {hour12: false});
+        }, 1000);
+
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let currentSearch = '';
+        let adminToken = localStorage.getItem('adminToken');
+        let isAdminLoggedIn = !!adminToken;
+
+        function lockScroll() { document.body.classList.add('body-no-scroll'); }
+        function unlockScroll() { document.body.classList.remove('body-no-scroll'); }
+
+        function openModal(modalId) {
+            lockScroll();
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            unlockScroll();
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('debugApiUrl').textContent = window.CONFIG.API_BASE_URL;
+            document.getElementById('debugCategoriesCount').textContent = categories ? categories.length : 0;
+            document.getElementById('debugProductsCount').textContent = products ? products.length : 0;
+        }
+
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-0 left-0 w-full bg-[#0020FF] text-white px-6 py-4 z-[9999] font-bold text-center tracking-widest uppercase text-sm';
+            errorDiv.innerHTML = message;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        window.logoutAdmin = function() {
+            localStorage.removeItem('adminToken');
+            adminToken = null;
+            isAdminLoggedIn = false;
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+            unlockScroll();
+            showErrorMessage('SYS.MSG: LOGGED OUT SECURELY.');
+            loadProducts();
+        }
+
+        window.switchAdminTab = (tab) => {
+            document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+            document.getElementById('tabBtnCategories').classList.toggle('active', tab === 'categories');
+            document.getElementById('adminTabProducts').classList.toggle('hidden', tab !== 'products');
+            document.getElementById('adminTabCategories').classList.toggle('hidden', tab !== 'categories');
+        };
+
+        // DATA LOADING
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories`);
+                if (!response.ok) throw new Error();
+                categories = await response.json();
+                updateDebugInfo();
+                renderCategoryButtons();
+                renderCategoriesList();
+                renderCategorySelect();
+                if (isAdminLoggedIn) renderAdminCategories();
+            } catch (error) {
+                showErrorMessage('SYS.ERR: CATEGORY_LOAD_FAIL');
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products`);
+                if (!response.ok) throw new Error();
+                products = await response.json();
+                updateDebugInfo();
+                renderProducts();
+                if (isAdminLoggedIn) renderAdminProducts();
+            } catch (error) {
+                showErrorMessage('SYS.ERR: PRODUCT_LOAD_FAIL');
+            }
+        }
+
+        // CATEGORY BUTTONS (Horizontal)
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryContainer');
+            if (!container) return;
+            
+            const allButton = container.querySelector('[data-category="all"]');
+            container.innerHTML = '';
+            container.appendChild(allButton);
+            
+            if (!categories) return;
+            
+            categories.forEach((category) => {
+                const button = document.createElement('button');
+                button.className = `category-btn text-2xl md:text-4xl font-black tracking-tighter whitespace-nowrap text-gray-300 hover:text-black transition-colors uppercase`;
+                button.dataset.category = category.id;
+                button.textContent = category.name;
+                button.addEventListener('click', () => filterByCategory(category.id));
+                container.appendChild(button);
+            });
+            updateActiveCategory();
+        }
+
+        // CATEGORY MENU (Vertical Full Screen)
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <button onclick="filterByCategory('all'); closeModal('categoriesModal');" 
+                        class="w-full text-left py-6 text-4xl md:text-6xl font-black tracking-tighter border-b border-black hover:text-[#0020FF] transition-colors ${currentCategory === 'all' ? 'text-[#0020FF]' : 'text-black'}">
+                    ALL
+                </button>
+            `;
+            
+            if (!categories) return;
+            categories.forEach((category) => {
+                const isActive = currentCategory === category.id;
+                const button = document.createElement('button');
+                button.className = `w-full text-left py-6 text-4xl md:text-6xl font-black tracking-tighter border-b border-black hover:text-[#0020FF] transition-colors flex justify-between items-center uppercase ${isActive ? 'text-[#0020FF]' : 'text-black'}`;
+                button.innerHTML = `
+                    <span>${category.name}</span>
+                    <span class="text-3xl">${category.icon}</span>
+                `;
+                button.addEventListener('click', () => {
+                    filterByCategory(category.id);
+                    closeModal('categoriesModal');
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function renderCategorySelect() {
+            const select = document.getElementById('productCategory');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">SELECT...</option>';
+            if (!categories) return;
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name.toUpperCase();
+                if (category.id === currentValue) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function filterByCategory(categoryId) {
+            currentCategory = categoryId;
+            
+            const titleEl = document.getElementById('currentCategoryTitle');
+            if (categoryId === 'all') {
+                titleEl.textContent = 'ALL ASSETS';
+            } else {
+                const cat = categories.find(c => c.id === categoryId);
+                titleEl.textContent = cat ? cat.name.toUpperCase() : 'ASSETS';
+            }
+            
+            updateActiveCategory();
+            renderProducts();
+            renderCategoriesList();
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if(btn.dataset.category === currentCategory) {
+                    btn.classList.add('text-black');
+                    btn.classList.remove('text-gray-300');
+                } else {
+                    btn.classList.remove('text-black');
+                    btn.classList.add('text-gray-300');
+                }
+            });
+        }
+
+        function performSearch() {
+            currentSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+            renderProducts();
+        }
+
+        // RENDER PRODUCTS (Swiss Grid Style with Enlarge Logos)
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            const noProducts = document.getElementById('noProducts');
+            if (!container) return;
+            
+            let filteredProducts = products.filter(product => {
+                const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
+                const matchesSearch = !currentSearch || 
+                    product.name.toLowerCase().includes(currentSearch) ||
+                    product.bank.toLowerCase().includes(currentSearch);
+                return matchesCategory && matchesSearch && (isAdminLoggedIn ? true : product.active);
+            });
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('hidden');
+                return;
+            }
+            
+            noProducts.classList.add('hidden');
+            container.innerHTML = '';
+            
+            filteredProducts.forEach(product => {
+                const category = categories.find(c => c.id === product.category);
+                const productCard = document.createElement('div');
+                
+                // Hack: white inner bg against black container bg creates 1px border grid
+                productCard.className = 'bg-white p-8 md:p-10 flex flex-col justify-between hover:bg-gray-50 transition-colors group cursor-pointer h-full min-h-[400px] relative';
+                
+                // MODIFIED: Enlarged logo container (w-24 h-24 / md:w-32 md:h-32)
+                productCard.innerHTML = `
+                    ${isAdminLoggedIn && !product.active ? `<div class="absolute top-4 left-4 bg-red-600 text-white px-2 py-1 text-[10px] font-bold">HIDDEN</div>` : ''}
+                    
+                    <div class="flex justify-between items-start mb-12">
+                        <div class="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-black bg-white flex items-center justify-center text-6xl flex-shrink-0 overflow-hidden p-4 group-hover:scale-105 transition-transform">
+                            ${product.image_url ? `
+                                <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-full object-contain img-swiss">
+                            ` : `
+                                <span>${category?.icon || '■'}</span>
+                            `}
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[10px] font-bold tracking-widest mb-1 opacity-50">YIELD / COND</div>
+                            <div class="text-xl md:text-3xl font-black text-[#0020FF] tracking-tighter leading-none">${product.conditions}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto">
+                        <div class="text-[10px] font-bold tracking-widest mb-4 opacity-50 border-b border-current pb-2 inline-block uppercase">
+                            ${product.bank}
+                        </div>
+                        <h3 class="text-4xl md:text-5xl font-black tracking-tighter leading-[0.9] mb-8 group-hover:text-[#0020FF] transition-colors uppercase">
+                            ${product.name}
+                        </h3>
+                        <button class="apply-btn w-full bg-black text-white py-5 font-bold tracking-widest group-hover:bg-[#0020FF] transition-colors border border-transparent text-center uppercase">
+                            ACTION →
+                        </button>
+                    </div>
+                `;
+                
+                productCard.addEventListener('click', (e) => {
+                    if (e.target.closest('.apply-btn')) {
+                        window.open(product.url, '_blank');
+                    } else {
+                        showProductDetails(product, category);
+                    }
+                });
+                
+                container.appendChild(productCard);
+            });
+        }
+
+        // PRODUCT DETAILS (With Full-width Hero Banner)
+        function showProductDetails(product, category) {
+            document.getElementById('productModalBank').textContent = product.bank;
+            
+            // Layout updated to feature a massive banner image
+            document.getElementById('productModalContent').innerHTML = `
+                <!-- GIANT HERO BANNER -->
+                <div class="w-full h-64 md:h-96 border-b border-black flex items-center justify-center bg-gray-100 p-8 relative overflow-hidden flex-shrink-0">
+                    ${product.image_url ? `
+                        <img src="${window.CONFIG.API_BASE_URL}${product.image_url}" class="w-full h-full object-contain img-swiss hover:scale-105 transition-transform duration-500">
+                    ` : `
+                        <span class="text-[120px] md:text-[200px] opacity-20 absolute">${category?.icon || '■'}</span>
+                        <span class="text-[80px] md:text-[120px] relative z-10">${category?.icon || '■'}</span>
+                    `}
+                </div>
+
+                <div class="p-8 md:p-12 flex-grow flex flex-col">
+                    <div class="text-[10px] font-bold tracking-widest border-b border-black pb-2 mb-6 opacity-50 inline-block uppercase">
+                        ${category ? category.name : 'ASSET'}
+                    </div>
+                    
+                    <h2 class="text-5xl md:text-7xl font-black tracking-tighter leading-[0.85] mb-12 uppercase">${product.name}</h2>
+                    
+                    <div class="border-t border-black pt-6 mb-12">
+                        <p class="text-[10px] font-bold tracking-widest mb-4 opacity-50">CONDITIONS</p>
+                        <p class="text-3xl md:text-5xl font-black text-[#0020FF] tracking-tighter leading-none">${product.conditions}</p>
+                    </div>
+                    
+                    <div class="border-t border-black pt-6 mb-12">
+                        <p class="text-[10px] font-bold tracking-widest mb-4 opacity-50">DETAILED SPECIFICATION</p>
+                        <p class="text-lg md:text-xl font-bold leading-relaxed whitespace-pre-line text-gray-800">${product.description}</p>
+                    </div>
+                    
+                    <div class="mt-auto pt-8">
+                        <button onclick="window.open('${product.url}', '_blank')" class="swiss-btn w-full text-xl md:text-2xl">
+                            PROCEED TO ISSUER →
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            openModal('productModal');
+        }
+
+        // AUTH
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) { showErrorMessage('SYS.ERR: EMPTY_CREDENTIALS'); return; }
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin@finance.ru');
+                formData.append('password', password);
+                
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.access_token;
+                    localStorage.setItem('adminToken', adminToken);
+                    isAdminLoggedIn = true;
+                    closeModal('adminLoginModal');
+                    openModal('adminPanelModal');
+                    await loadProducts();
+                    renderAdminProducts();
+                    renderAdminCategories();
+                } else { showErrorMessage('SYS.ERR: ACCESS_DENIED'); }
+            } catch (error) { showErrorMessage('SYS.ERR: SERVER_UNREACHABLE'); }
+        }
+
+        // ADMIN: PRODUCTS
+        function renderAdminProducts() {
+            const container = document.getElementById('adminProductsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            document.getElementById('productCount').textContent = String(products.length).padStart(3, '0');
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'bg-white p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-gray-100 transition-colors';
+                item.innerHTML = `
+                    <div class="mb-4 md:mb-0">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="w-3 h-3 ${product.active ? 'bg-black' : 'border border-black'} rounded-full"></span>
+                            <span class="text-[10px] font-bold tracking-widest opacity-50 uppercase">${product.bank}</span>
+                        </div>
+                        <h4 class="text-2xl font-black tracking-tighter uppercase">${product.name}</h4>
+                    </div>
+                    <button onclick="editProduct('${product.id}')" class="swiss-btn swiss-btn-outline px-8 py-4 w-full md:w-auto">
+                        EDIT
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            
+            const productId = document.getElementById('productId').value;
+            const isEdit = !!productId;
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('bank', document.getElementById('productBank').value);
+            formData.append('category', document.getElementById('productCategory').value);
+            formData.append('description', document.getElementById('productDescription').value);
+            formData.append('conditions', document.getElementById('productConditions').value);
+            formData.append('url', document.getElementById('productUrl').value);
+            formData.append('active', document.getElementById('productActive').checked);
+            
+            const imageFile = document.getElementById('productImage').files[0];
+            if (imageFile) formData.append('file', imageFile);
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/products/${productId}` : `${window.CONFIG.API_BASE_URL}/products`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                } else { showErrorMessage('SYS.ERR: COMMIT_FAILED'); }
+            } catch (error) { showErrorMessage('SYS.ERR: NET_FAULT'); }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('CONFIRM DELETION. THIS ACTION IS IRREVERSIBLE.')) return;
+            try {
+                if (!adminToken) return;
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (response.ok) {
+                    await loadProducts();
+                    renderAdminProducts();
+                    closeModal('productFormModal');
+                    openModal('adminPanelModal');
+                }
+            } catch (error) { showErrorMessage('SYS.ERR: DEL_FAULT'); }
+        }
+
+        // ADMIN: CATEGORIES
+        function renderAdminCategories() {
+            const container = document.getElementById('adminCategoriesList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            categories.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'bg-white p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-gray-100 transition-colors';
+                item.innerHTML = `
+                    <div class="mb-4 md:mb-0 flex items-center gap-6">
+                        <span class="text-4xl w-12 text-center">${c.icon}</span>
+                        <div>
+                            <div class="flex items-center gap-4 mb-2">
+                                <span class="w-3 h-3 ${c.active ? 'bg-[#0020FF]' : 'border border-black'} rounded-full"></span>
+                                <span class="text-[10px] font-bold tracking-widest opacity-50 uppercase">ID: ${c.id}</span>
+                            </div>
+                            <h4 class="text-2xl font-black tracking-tighter uppercase">${c.name}</h4>
+                        </div>
+                    </div>
+                    <button onclick="editCategory('${c.id}')" class="swiss-btn swiss-btn-outline px-8 py-4 w-full md:w-auto">
+                        EDIT
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function saveCategory(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+            
+            const id = document.getElementById('categoryId').value;
+            const isEdit = document.getElementById('categoryIsEdit').value === 'true';
+            
+            const payload = {
+                id: id,
+                name: document.getElementById('categoryName').value,
+                icon: document.getElementById('categoryIcon').value,
+                active: document.getElementById('categoryActive').checked
+            };
+            
+            try {
+                const url = isEdit ? `${window.CONFIG.API_BASE_URL}/categories/${id}` : `${window.CONFIG.API_BASE_URL}/categories`;
+                const response = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else { showErrorMessage('SYS.ERR: CATEGORY_COMMIT_FAILED'); }
+            } catch (error) { showErrorMessage('SYS.ERR: NET_FAULT'); }
+        }
+
+        async function deleteCategory(id) {
+            if(!confirm('SYS.WARN: DIRECTORY MUST BE EMPTY BEFORE DELETION. PROCEED?')) return;
+            try {
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/categories/${id}`, {
+                    method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if(response.ok) {
+                    await loadCategories();
+                    closeModal('categoryFormModal');
+                    openModal('adminPanelModal');
+                } else showErrorMessage('SYS.ERR: DIRECTORY_NOT_EMPTY');
+            } catch (error) { showErrorMessage('SYS.ERR: DEL_FAULT'); }
+        }
+
+        // INITIALIZATION
+        async function initApp() {
+            const isApiAvailable = await window.CONFIG.checkApiHealth();
+            if (isApiAvailable) {
+                await loadCategories();
+                await loadProducts();
+                bindEvents();
+            } else {
+                showErrorMessage('CRITICAL: API_OFFLINE');
+            }
+        }
+
+        function bindEvents() {
+            document.getElementById('searchInput').addEventListener('input', performSearch);
+            
+            document.getElementById('adminBtn').addEventListener('click', () => {
+                isAdminLoggedIn ? openModal('adminPanelModal') : openModal('adminLoginModal');
+            });
+            
+            document.getElementById('menuBtn').addEventListener('click', () => {
+                renderCategoriesList();
+                openModal('categoriesModal');
+            });
+            
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') adminLogin();
+            });
+            
+            // PRODUCT BINDINGS
+            document.getElementById('productForm').addEventListener('submit', saveProduct);
+            document.getElementById('addProductBtn').addEventListener('click', () => {
+                document.getElementById('productFormTitle').textContent = 'NEW ASSET';
+                document.getElementById('productForm').reset();
+                document.getElementById('productActive').checked = true;
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('deleteProductBtn').classList.add('hidden');
+                document.getElementById('productId').value = '';
+                renderCategorySelect();
+                closeModal('adminPanelModal');
+                openModal('productFormModal');
+            });
+            document.getElementById('deleteProductBtn').addEventListener('click', () => {
+                const productId = document.getElementById('productId').value;
+                if (productId) deleteProduct(productId);
+            });
+
+            // CATEGORY BINDINGS
+            document.getElementById('categoryForm').addEventListener('submit', saveCategory);
+            document.getElementById('addCategoryBtn').addEventListener('click', () => {
+                document.getElementById('categoryFormTitle').textContent = 'NEW CATEGORY';
+                document.getElementById('categoryForm').reset();
+                document.getElementById('categoryId').readOnly = false;
+                document.getElementById('categoryIsEdit').value = 'false';
+                document.getElementById('categoryActive').checked = true;
+                document.getElementById('deleteCategoryBtn').classList.add('hidden');
+                closeModal('adminPanelModal'); openModal('categoryFormModal');
+            });
+            document.getElementById('deleteCategoryBtn').addEventListener('click', () => {
+                const id = document.getElementById('categoryId').value;
+                if (id) deleteCategory(id);
+            });
+            
+            // IMAGE UPLOAD PREVIEW
+            document.getElementById('productImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('imagePreview').src = event.target.result;
+                        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                        document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // BACKDROP CLOSE & SHORTCUTS
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal.id);
+                });
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal-backdrop:not(.hidden)');
+                    if (openModals.length > 0) closeModal(openModals[openModals.length - 1].id);
+                }
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    document.getElementById('debugPanel').classList.toggle('hidden');
+                }
+            });
+        }
+
+        // GLOBAL EXPORTS
+        window.closeModal = closeModal;
+        window.filterByCategory = filterByCategory;
+        
+        window.editProduct = (productId) => {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            document.getElementById('productFormTitle').textContent = 'EDIT ASSET';
+            document.getElementById('productId').value = productId;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productBank').value = product.bank;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productConditions').value = product.conditions;
+            document.getElementById('productUrl').value = product.url;
+            document.getElementById('productActive').checked = product.active;
+            
+            if (product.image_url) {
+                document.getElementById('imagePreview').src = `${window.CONFIG.API_BASE_URL}${product.image_url}`;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+            
+            document.getElementById('deleteProductBtn').classList.remove('hidden');
+            closeModal('adminPanelModal');
+            openModal('productFormModal');
+        };
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            if(!c) return;
+            document.getElementById('categoryFormTitle').textContent = 'EDIT CATEGORY';
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryId').readOnly = true; 
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categoryIcon').value = c.icon;
+            document.getElementById('categoryActive').checked = c.active;
+            document.getElementById('categoryIsEdit').value = 'true';
+            document.getElementById('deleteCategoryBtn').classList.remove('hidden');
+            closeModal('adminPanelModal'); openModal('categoryFormModal');
+        };
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
